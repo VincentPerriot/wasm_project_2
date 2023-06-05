@@ -1,5 +1,5 @@
 ﻿#include <iostream>
-#include <GLES3/gl3.h>
+#include <GLES2/gl2.h>
 #include <GLFW/glfw3.h>
 #include <emscripten.h>
 
@@ -20,7 +20,7 @@ const char* vertexShader = R"(
     attribute vec3 a_colors; // vertex colors
     attribute vec2 a_texcoord; // texture coordinates
 
-    varying vec2 v_texcoords;
+    varying vec2 v_texcoord;
     varying vec3 v_colors;
 
     void main()
@@ -42,7 +42,8 @@ const char* fragmentShader = R"(
 
     void main()
     {
-        gl_FragColor = texture(texture, v_textcoord) * vec4(v_colors, 1.0);
+        //gl_FragColor = texture2D(texture, v_texcoord) * vec4(v_colors, 1.0);
+        gl_FragColor = vec4(v_colors, 1.0);
     }
 )";
 
@@ -119,18 +120,36 @@ GLuint createProgram(const char* vertexSource, const char* fragmentSource)
     return program;
 }
 
-float vertices[] = {
-    // positions          // colors           // texture coords
-     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+const GLfloat vertices[] = {    
+  -0.5, 0.5, 0.0,   // Top left
+  -0.5, -0.5, 0.0,  // Bottom left
+  0.5, -0.5, 0.0,   // Bottom right
+  0.5, 0.5, 0.0     // Top right
 };
 
+const GLfloat colors[] = {
+  1.0, 0.0, 0.0, 1.0,   // Red (Top left)
+  0.0, 1.0, 0.0, 1.0,   // Green (Bottom left)
+  0.0, 0.0, 1.0, 1.0,   // Blue (Bottom right)
+  1.0, 1.0, 0.0, 1.0    // Yellow (Top right)
+};
+
+const GLfloat texturecoord[] = {
+	1.0, 1.0,
+	1.0, 0.0,
+	0.0, 0.0,
+	0.0, 1.0
+};
+
+const GLushort indices[] = {
+	0, 1, 2, // first triangle
+	0, 2, 3  // second triangle
+};
+
+GLint a_vertex = 0;
+GLint a_colors = 0;
+GLint a_texcoord = 0;
 GLuint quadProgram = 0;
-GLint vPosition = 0;
-GLint colors = 0;
-GLint texCoord = 0;
 GLFWwindow* window;
 
 
@@ -177,7 +196,10 @@ int main()
     stbi_image_free(data);
 
     quadProgram = createProgram(vertexShader, fragmentShader);
-    vPosition = glGetAttribLocation(quadProgram, "vPosition");
+
+    a_vertex = glGetAttribLocation(quadProgram, "a_vertex");
+    a_colors = glGetAttribLocation(quadProgram, "a_colors");
+    a_texcoord = glGetAttribLocation(quadProgram, "a_texture");
 
     glUseProgram(quadProgram);
 
@@ -192,11 +214,20 @@ void loop()
 {
     glUseProgram(quadProgram);
 
-    glClearColor( 0.4, 0.3, 0.2, 1 );
+    glClearColor( 0.1, 0.1, 0.2, 1 );
     glClear( GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT );
 
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(2);
+	// position attribute
+    glVertexAttribPointer(a_vertex, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+    glEnableVertexAttribArray(a_vertex);
+    
+    // color attribute
+    glVertexAttribPointer(a_colors, 3, GL_FLOAT, GL_FALSE, 0, colors);
+    glEnableVertexAttribArray(a_colors);
 
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    // Texture attribute
+    glVertexAttribPointer(a_texcoord, 2, GL_FLOAT, GL_FALSE, 0, texturecoord);
+    glEnableVertexAttribArray(a_texcoord);
+
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
 }

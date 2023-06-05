@@ -29,5 +29,5 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     SUFFIX ".html"
     COMPILE_FLAGS ""
     #LINK_FLAGS "-s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1 --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html"
-    LINK_FLAGS "-s USE_GLFW=3 -s FULL_ES2 -s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1"
+    LINK_FLAGS "-s USE_GLFW=3 -s FULL_ES2 -s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1 --preload-file ../../../assets"
 )

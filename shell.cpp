@@ -1,8 +1,10 @@
 ﻿#include <iostream>
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 #include <GLFW/glfw3.h>
 #include <emscripten.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #define CANVAS_WIDTH 800
 #define CANVAS_HEIGHT 600
@@ -13,21 +15,34 @@ void loop();
 
 // Vertex shader source
 const char* vertexShader = R"(
-    attribute vec4 vPosition;
+    //TODO add MVP mat
+    attribute vec4 a_vertex; // vertex position 
+    attribute vec3 a_colors; // vertex colors
+    attribute vec2 a_texcoord; // texture coordinates
+
+    varying vec2 v_texcoords;
+    varying vec3 v_colors;
 
     void main()
     {
-        gl_Position = vPosition;
+        gl_Position = a_vertex;
+        v_colors = a_colors;
+        v_texcoord = a_texcoord;
     }
 )";
 
 // Fragment shader source
 const char* fragmentShader = R"(
     precision mediump float;
+    
+    varying vec3 v_colors;
+    varying vec2 v_texcoord;
+
+    uniform sampler2D texture;
 
     void main()
     {
-        gl_FragColor = vec4(0.8, 0.6, 0.4, 1.0);
+        gl_FragColor = texture(texture, v_textcoord) * vec4(v_colors, 1.0);
     }
 )";
 
@@ -104,16 +119,20 @@ GLuint createProgram(const char* vertexSource, const char* fragmentSource)
     return program;
 }
 
-// Vertex data
-const GLfloat vertices[] = {
-        0.0, 0.5,
-        -0.5, -0.5,
-        0.5, -0.5
+float vertices[] = {
+    // positions          // colors           // texture coords
+     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
 };
 
-GLuint triangleProgram = 0;
+GLuint quadProgram = 0;
 GLint vPosition = 0;
+GLint colors = 0;
+GLint texCoord = 0;
 GLFWwindow* window;
+
 
 int main()
 {
@@ -134,10 +153,33 @@ int main()
     // Make the created window the current context
     glfwMakeContextCurrent(window);
 
-    triangleProgram = createProgram(vertexShader, fragmentShader);
-    vPosition = glGetAttribLocation(triangleProgram, "vPosition");
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("/assets/container.jpg", &width, &height, &nrChannels, 0);
 
-    glUseProgram(triangleProgram);
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    // set the texture wrapping/filtering options (on the currently bound texture object)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else {
+        std::cout << "Failed to load texture file" << std::endl;
+    }
+
+    stbi_image_free(data);
+
+    quadProgram = createProgram(vertexShader, fragmentShader);
+    vPosition = glGetAttribLocation(quadProgram, "vPosition");
+
+    glUseProgram(quadProgram);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -148,13 +190,13 @@ int main()
 
 void loop()
 {
-    glUseProgram(triangleProgram);
+    glUseProgram(quadProgram);
 
-    glClearColor( 0.4, 0.3, 0.6, 1 );
+    glClearColor( 0.4, 0.3, 0.2, 1 );
     glClear( GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT );
 
-    glVertexAttribPointer(vPosition, 2, GL_FLOAT, GL_FALSE, 0 , vertices);
-    glEnableVertexAttribArray(vPosition);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(2);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }

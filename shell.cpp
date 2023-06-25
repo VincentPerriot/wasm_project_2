@@ -42,8 +42,7 @@ const char* fragmentShader = R"(
 
     void main()
     {
-        //gl_FragColor = texture2D(texture, v_texcoord) * vec4(v_colors, 1.0);
-        gl_FragColor = vec4(v_colors, 1.0);
+        gl_FragColor = texture2D(texture, v_texcoord) * vec4(v_colors, 1.0);
     }
 )";
 
@@ -135,10 +134,10 @@ const GLfloat colors[] = {
 };
 
 const GLfloat texturecoord[] = {
-	1.0, 1.0,
-	1.0, 0.0,
-	0.0, 0.0,
-	0.0, 1.0
+	0.0, 1.0,   // Top left
+	0.0, 0.0,   // Bottom left
+	1.0, 0.0,   // Bottom Right
+	1.0, 1.0    // Top Right
 };
 
 const GLushort indices[] = {
@@ -151,7 +150,7 @@ GLint a_colors = 0;
 GLint a_texcoord = 0;
 GLuint quadProgram = 0;
 GLFWwindow* window;
-
+unsigned int texture;
 
 int main()
 {
@@ -172,19 +171,18 @@ int main()
     // Make the created window the current context
     glfwMakeContextCurrent(window);
 
-    int width, height, nrChannels;
-    unsigned char *data = stbi_load("/assets/container.jpg", &width, &height, &nrChannels, 0);
-
-    unsigned int texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-
     // set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("/assets/container.jpg", &width, &height, &nrChannels, 0);
 
+    stbi_set_flip_vertically_on_load(true); 
     if (data) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
@@ -199,9 +197,10 @@ int main()
 
     a_vertex = glGetAttribLocation(quadProgram, "a_vertex");
     a_colors = glGetAttribLocation(quadProgram, "a_colors");
-    a_texcoord = glGetAttribLocation(quadProgram, "a_texture");
+    a_texcoord = glGetAttribLocation(quadProgram, "a_texcoord");
 
     glUseProgram(quadProgram);
+    glUniform1i(glGetUniformLocation(quadProgram, "texture"), 0);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -216,6 +215,9 @@ void loop()
 
     glClearColor( 0.1, 0.1, 0.2, 1 );
     glClear( GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT );
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
 
 	// position attribute
     glVertexAttribPointer(a_vertex, 3, GL_FLOAT, GL_FALSE, 0, vertices);

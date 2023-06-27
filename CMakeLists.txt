@@ -22,12 +22,13 @@ find_package(OpenGL REQUIRED)
 set(SOURCES shell.cpp)
 
 # Create the executable
-add_executable(${PROJECT_NAME} ${SOURCES}  "stb_image.h" "vec3.h" "maths.h" "camera.h")
+add_executable(${PROJECT_NAME} ${SOURCES}  "stb_image.h" "vec3.h" "maths.h" "camera.h" "vec4.h" "mat4.h")
 
 # Set Emscripten-specific options
 set_target_properties(${PROJECT_NAME} PROPERTIES
     SUFFIX ".html"
     COMPILE_FLAGS ""
-    #LINK_FLAGS "-s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1 --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html"
+    #Use later for custom html and CSS
+    #LINK_FLAGS "-s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1 --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html --preload-file"
     LINK_FLAGS "-s USE_GLFW=3 -s FULL_ES2 -s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1 --preload-file ../../../assets"
 )

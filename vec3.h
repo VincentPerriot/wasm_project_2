@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <vec4.h>
 
 using std::sqrt;
 
@@ -13,7 +14,6 @@ public:
 	vec3() : e{0,0,0} {}
 	vec3(double e0, double e1, double e2) : e{e0, e1, e2} {}
 
-	// Added rgb from orginal code
 	double x() const { return e[0]; }
 	double y() const { return e[1]; }
 	double z() const { return e[2]; }
@@ -173,14 +173,10 @@ vec3 random_vector_in_unit_disk()
 	}
 }
 
-double magnitude(vec3 v)
+vec4 toVec4(vec3& v, double w = 1.0)
 {
-	return sqrt((v.x * v.x) + (v.y * v.y) + (v.z*v.z));
-}
-
-void normalize(vec3& v)
-{
-	v = v * (1.0 / magnitude(v));
+	vec4 newVector = { v.x(), v.y(), v.z(), w };
+	return newVector;
 }
 
 #endif // !VEC3_H

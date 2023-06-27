@@ -5,6 +5,8 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "vec4.h"
+#include "mat4.h"
 
 #define CANVAS_WIDTH 800
 #define CANVAS_HEIGHT 600
@@ -154,6 +156,21 @@ unsigned int texture;
 
 int main()
 {
+
+    vec4 testvec = vec4(1, 1, 1, 1);
+    std::cout << testvec[1] << std::endl;
+
+    mat4 testMat1 = { {5,2,8,3}, {7,3,10,3}, {9,3,2,4}, {10,8,3,8} };
+	mat4 testMat2 = { {3,12,9,3}, {10,1,10,12}, {12,4,12,4}, {18, 9, 2, 10} };
+    mat4 I;
+
+    testMat1.print();
+    testMat2.print();
+
+    mat4 testResult = testMat1 * testMat2 * I;
+
+    testResult.print();
+
     if (!glfwInit())
     {
         std::cerr << "Failed to initialize GLFW" << std::endl;

@@ -8,7 +8,6 @@
 #include <memory>
 #include <cstdlib>
 
-
 // Usings
 
 using std::shared_ptr;
@@ -51,9 +50,13 @@ inline double clamp(double x, double min, double max)
     return x;
 }
 
+inline double lerp(double a, double b, double t)
+{
+    return a * (1.0 - t) + b * t;
+}
+
 // Common Headers
 
-#include "ray.h"
 #include "vec3.h"
 
 #endif

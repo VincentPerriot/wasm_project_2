@@ -55,8 +55,4 @@ inline double lerp(double a, double b, double t)
     return a * (1.0 - t) + b * t;
 }
 
-// Common Headers
-
-#include "vec3.h"
-
 #endif

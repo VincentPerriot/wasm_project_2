@@ -2,6 +2,7 @@
 #include <GLES2/gl2.h>
 #include <GLFW/glfw3.h>
 #include <emscripten.h>
+#include <chrono>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -22,12 +23,14 @@ const char* vertexShader = R"(
     attribute vec3 a_colors; // vertex colors
     attribute vec2 a_texcoord; // texture coordinates
 
+    uniform mat4 transform;
+
     varying vec2 v_texcoord;
     varying vec3 v_colors;
 
     void main()
     {
-        gl_Position = a_vertex;
+        gl_Position = a_vertex * transform;
         v_colors = a_colors;
         v_texcoord = a_texcoord;
     }
@@ -154,6 +157,7 @@ GLuint quadProgram = 0;
 GLFWwindow* window;
 unsigned int texture;
 
+
 int main()
 {
 
@@ -170,6 +174,7 @@ int main()
     mat4 testResult = testMat1 * testMat2 * I;
 
     testResult.print();
+
 
     if (!glfwInit())
     {
@@ -247,6 +252,29 @@ void loop()
     // Texture attribute
     glVertexAttribPointer(a_texcoord, 2, GL_FLOAT, GL_FALSE, 0, texturecoord);
     glEnableVertexAttribArray(a_texcoord);
+
+	double deltaTime = 0;
+	double lastTime = 0;
+
+	double now = glfwGetTime();
+
+	deltaTime = now - lastTime;
+	lastTime = now;
+
+    double angle = 0;
+
+	angle += 30 * deltaTime;
+    if (angle > 360)
+        angle = angle - 360;
+
+	mat4 transform;
+	transform = scale(transform, 1.2);
+    transform = roll(transform, angle);
+
+	unsigned int transformLoc = glGetUniformLocation(quadProgram, "transform");
+	std::vector<float> formattedTransform = transform.toFloatVector();
+
+	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedTransform.data()));
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
 }

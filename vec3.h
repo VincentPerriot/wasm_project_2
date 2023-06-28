@@ -4,7 +4,8 @@
 
 #include <cmath>
 #include <iostream>
-#include <vec4.h>
+#include "vec4.h"
+#include "maths.h"
 
 using std::sqrt;
 
@@ -45,6 +46,15 @@ public:
 	vec3& operator/=(const double t)
 	{
 		return *this *= 1 / t;
+	}
+
+	bool operator==(const vec3& v)
+	{
+		if (e[0] == v.e[0] && e[1] == v.e[1] && e[2] == v.e[2])
+		{
+			return true;
+		}
+		return false;
 	}
 
 	double length() const 
@@ -180,3 +190,4 @@ vec4 toVec4(vec3& v, double w = 1.0)
 }
 
 #endif // !VEC3_H
+

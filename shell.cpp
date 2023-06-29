@@ -18,41 +18,6 @@
 
 void loop();
 
-// Vertex shader source
-const char* vertexShader = R"(
-
-    attribute vec4 a_vertex; // vertex position 
-    attribute vec3 a_colors; // vertex colors
-    attribute vec2 a_texcoord; // texture coordinates
-
-    uniform mat4 mvp;
-
-    varying vec2 v_texcoord;
-    varying vec3 v_colors;
-
-    void main()
-    {
-        gl_Position = a_vertex * mvp;
-        v_colors = a_colors;
-        v_texcoord = a_texcoord;
-    }
-)";
-
-// Fragment shader source
-const char* fragmentShader = R"(
-    precision mediump float;
-    
-    varying vec3 v_colors;
-    varying vec2 v_texcoord;
-
-    uniform sampler2D texture;
-
-    void main()
-    {
-        gl_FragColor = texture2D(texture, v_texcoord) * vec4(v_colors, 1.0);
-    }
-)";
-
 GLuint loadShader(GLenum shaderType, const char* filePath)
 {
     GLuint shader = glCreateShader(shaderType);
@@ -150,6 +115,13 @@ const GLfloat vertices[] = {
   0.5, 0.5, 0.0     // Top right
 };
 
+const GLfloat b_vertices[] = { 
+    -2.0, 2.0, -1.0,
+    -2.0, -2.0, -1.0,
+    2.0, -2.0, -1.0,
+    2.0, 2.0, -1.0
+};
+
 const GLfloat colors[] = {
   1.0, 0.0, 0.0, 1.0,   // Red (Top left)
   0.0, 1.0, 0.0, 1.0,   // Green (Bottom left)
@@ -169,10 +141,17 @@ const GLushort indices[] = {
 	0, 2, 3  // second triangle
 };
 
+const GLushort b_indices[] = {
+	0, 1, 2, // first triangle
+	0, 2, 3  // second triangle
+};
+
 GLint a_vertex = 0;
+GLint b_vertex = 0;
 GLint a_colors = 0;
 GLint a_texcoord = 0;
 GLuint quadProgram = 0;
+GLuint fractalProgram = 0;
 GLFWwindow* window;
 unsigned int texture;
 
@@ -224,6 +203,10 @@ int main()
     a_colors = glGetAttribLocation(quadProgram, "a_colors");
     a_texcoord = glGetAttribLocation(quadProgram, "a_texcoord");
 
+    fractalProgram = createProgram("/shaders/shader_2.vert", "/shaders/shader_2.frag");
+    b_vertex = glGetAttribLocation(fractalProgram, "b_vertex");
+
+    glUseProgram(fractalProgram);
     glUseProgram(quadProgram);
     glUniform1i(glGetUniformLocation(quadProgram, "texture"), 0);
 
@@ -239,26 +222,7 @@ int main()
 
 void loop()
 {
-    glUseProgram(quadProgram);
-
-    glClearColor( 0.1, 0.1, 0.2, 1 );
-    glClear( GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT );
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-	// position attribute
-    glVertexAttribPointer(a_vertex, 3, GL_FLOAT, GL_FALSE, 0, vertices);
-    glEnableVertexAttribArray(a_vertex);
-    
-    // color attribute
-    glVertexAttribPointer(a_colors, 3, GL_FLOAT, GL_FALSE, 0, colors);
-    glEnableVertexAttribArray(a_colors);
-
-    // Texture attribute
-    glVertexAttribPointer(a_texcoord, 2, GL_FLOAT, GL_FALSE, 0, texturecoord);
-    glEnableVertexAttribArray(a_texcoord);
-
+    // Create MVP 
 	double deltaTime = 0;
 	double lastTime = 0;
 
@@ -283,6 +247,27 @@ void loop()
 
     mat4 mvp = proj * view * model;
 
+    // Begin Quad Render program
+    glUseProgram(quadProgram);
+
+    glClearColor( 0.1, 0.1, 0.2, 1 );
+    glClear( GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT );
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+	// position attribute
+    glVertexAttribPointer(a_vertex, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+    glEnableVertexAttribArray(a_vertex);
+
+    // color attribute
+    glVertexAttribPointer(a_colors, 3, GL_FLOAT, GL_FALSE, 0, colors);
+    glEnableVertexAttribArray(a_colors);
+
+    // Texture attribute
+    glVertexAttribPointer(a_texcoord, 2, GL_FLOAT, GL_FALSE, 0, texturecoord);
+    glEnableVertexAttribArray(a_texcoord);
+
     unsigned int mvpLoc = glGetUniformLocation(quadProgram, "mvp");
 
     std::vector<float> formattedMVP = mvp.toFloatVector();
@@ -290,4 +275,25 @@ void loop()
 	glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedMVP.data()));
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
+
+
+    // Begin Fractal program
+    glUseProgram(fractalProgram);
+	// Shaders2 position attribute
+    glVertexAttribPointer(b_vertex, 3, GL_FLOAT, GL_FALSE, 0, b_vertices);
+    glEnableVertexAttribArray(b_vertex);
+
+    mat4 model2;
+    mat4 mvp2 = proj * view * model2;
+
+    unsigned int mvpLoc2 = glGetUniformLocation(fractalProgram, "mvp");
+    unsigned int timeLoc = glGetUniformLocation(fractalProgram, "time");
+
+    std::vector<float> formattedMVP2 = mvp2.toFloatVector();
+
+	glUniformMatrix4fv(mvpLoc2, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedMVP2.data()));
+    glUniform1f(timeLoc, static_cast<GLfloat>(deltaTime));
+    
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, b_indices);
+
 }

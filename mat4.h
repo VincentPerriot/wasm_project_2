@@ -189,4 +189,35 @@ inline mat4 rotate(mat4 M, double angle, vec3 axis)
 	return M * rotate;
 }
 
+inline mat4 view_mat(vec3 eye, vec3 center, vec3 up)
+{
+	vec3 Z_axis = eye - center;
+	vec3 nZ = unit_vector(Z_axis);
 
+	vec3 nUp = unit_vector(up);
+
+	vec3 X_axis = cross(nZ, nUp);
+	vec3 nX = unit_vector(X_axis);
+
+	vec3 Y_axis = cross(nX, nZ);
+	vec3 nY = unit_vector(Y_axis);
+
+	mat4 view = { {nX.x(), nY.x(), nZ.x(), 0}, 
+		{nX.y(), nY.y(), nZ.y(), 0}, 
+		{-nX.z(), -nY.z(), -nZ.z(), 0}, 
+		{-dot(nX, eye), -dot(nY, eye), -dot(nZ, eye), 1}};
+
+	return view;
+}
+
+inline mat4 projection_mat(double FOV, double width, double height, double near, double far)
+{
+	double a = degrees_to_radians(FOV);
+	double f = 1 / tan(a / 2);
+	double r = width / height;
+	double b = (far + near) / (near - far);
+	double c = 2 * far * near / (near - far);
+
+	mat4 proj = { {f / r, 0, 0, 0}, {0, f, 0, 0}, {0, 0, b, -1}, {0, 0, c, 0} };
+	return proj;
+}

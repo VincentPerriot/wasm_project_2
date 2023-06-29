@@ -18,19 +18,19 @@ void loop();
 
 // Vertex shader source
 const char* vertexShader = R"(
-    //TODO add MVP mat
+
     attribute vec4 a_vertex; // vertex position 
     attribute vec3 a_colors; // vertex colors
     attribute vec2 a_texcoord; // texture coordinates
 
-    uniform mat4 transform;
+    uniform mat4 mvp;
 
     varying vec2 v_texcoord;
     varying vec3 v_colors;
 
     void main()
     {
-        gl_Position = a_vertex * transform;
+        gl_Position = a_vertex * mvp;
         v_colors = a_colors;
         v_texcoord = a_texcoord;
     }
@@ -157,24 +157,8 @@ GLuint quadProgram = 0;
 GLFWwindow* window;
 unsigned int texture;
 
-
 int main()
 {
-
-    vec4 testvec = vec4(1, 1, 1, 1);
-    std::cout << testvec[1] << std::endl;
-
-    mat4 testMat1 = { {5,2,8,3}, {7,3,10,3}, {9,3,2,4}, {10,8,3,8} };
-	mat4 testMat2 = { {3,12,9,3}, {10,1,10,12}, {12,4,12,4}, {18, 9, 2, 10} };
-    mat4 I;
-
-    testMat1.print();
-    testMat2.print();
-
-    mat4 testResult = testMat1 * testMat2 * I;
-
-    testResult.print();
-
 
     if (!glfwInit())
     {
@@ -225,6 +209,8 @@ int main()
     glUniform1i(glGetUniformLocation(quadProgram, "texture"), 0);
 
     glEnable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     emscripten_set_main_loop(loop, 0, 0);
@@ -267,14 +253,21 @@ void loop()
     if (angle > 360)
         angle = angle - 360;
 
-	mat4 transform;
-	transform = scale(transform, 1.2);
-    transform = roll(transform, angle);
+	mat4 model;
+	model = scale(model, 1.2);
+    model = roll(model, angle);
+    model = rotate(model, -55, vec3(1, 0, 0));
 
-	unsigned int transformLoc = glGetUniformLocation(quadProgram, "transform");
-	std::vector<float> formattedTransform = transform.toFloatVector();
+    mat4 view = view_mat(vec3(0, 0, -3), vec3(0, 0, 0), vec3(0, 1, 0));
+    mat4 proj = projection_mat(60, CANVAS_WIDTH, CANVAS_HEIGHT, 0.1, 100);
 
-	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedTransform.data()));
+    mat4 mvp = proj * view * model;
+
+    unsigned int mvpLoc = glGetUniformLocation(quadProgram, "mvp");
+
+    std::vector<float> formattedMVP = mvp.toFloatVector();
+
+	glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedMVP.data()));
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
 }

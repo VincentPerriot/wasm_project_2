@@ -36,5 +36,5 @@ public:
     float MovementSpeed;
     float MouseSensitivity;
 
-
+}
 

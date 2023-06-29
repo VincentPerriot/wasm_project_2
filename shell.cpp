@@ -3,6 +3,8 @@
 #include <GLFW/glfw3.h>
 #include <emscripten.h>
 #include <chrono>
+#include <fstream>
+#include <sstream>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -51,30 +53,47 @@ const char* fragmentShader = R"(
     }
 )";
 
-GLuint loadShader(GLenum shaderType, const char* shaderSource)
+GLuint loadShader(GLenum shaderType, const char* filePath)
 {
     GLuint shader = glCreateShader(shaderType);
     if (shader) 
     {
-        glShaderSource(shader, 1, &shaderSource, nullptr);
-        glCompileShader(shader);
+        std::ifstream shaderFile(filePath);
+        if (shaderFile) {
 
-        GLint compiled = 0;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+            std::stringstream shaderStream;
+            shaderStream << shaderFile.rdbuf();
+            shaderFile.close();
 
-        if (!compiled)
-        {
-            GLint infolen = 0;
-            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infolen);
+            std::string shaderCode = shaderStream.str();
+            const char* shaderSource = shaderCode.c_str();
 
-            if (infolen)
+            glShaderSource(shader, 1, &shaderSource, nullptr);
+            glCompileShader(shader);
+
+            GLint compiled = 0;
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+
+            if (!compiled)
             {
-                char* errMessage = (char*)malloc(infolen);
-                glGetShaderInfoLog(shader, infolen, nullptr, errMessage);
-                std::cout << "Could not compile shader: " << shaderType << std::endl;
-                std::cout << "Error Message: " << errMessage << std::endl;
-                free(errMessage);
+                GLint infolen = 0;
+                glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infolen);
+
+                if (infolen)
+                {
+                    char* errMessage = (char*)malloc(infolen);
+                    glGetShaderInfoLog(shader, infolen, nullptr, errMessage);
+                    std::cout << "Could not compile shader: " << shaderType << std::endl;
+                    std::cout << "Error Message: " << errMessage << std::endl;
+                    free(errMessage);
+                }
+                glDeleteShader(shader);
+                shader = 0;
             }
+        }
+        else
+        {
+            std::cout << "Failed to open shader file: " << filePath << std::endl;
             glDeleteShader(shader);
             shader = 0;
         }
@@ -82,14 +101,14 @@ GLuint loadShader(GLenum shaderType, const char* shaderSource)
     return shader;
 }
 
-GLuint createProgram(const char* vertexSource, const char* fragmentSource)
+GLuint createProgram(const char* vertexSourceFile, const char* fragmentSourceFile)
 {
-   GLuint vertexShader = loadShader(GL_VERTEX_SHADER, vertexSource);
+   GLuint vertexShader = loadShader(GL_VERTEX_SHADER, vertexSourceFile);
     if (!vertexShader)
     {
         return 0;
     }
-    GLuint fragmentShader = loadShader(GL_FRAGMENT_SHADER, fragmentSource);
+    GLuint fragmentShader = loadShader(GL_FRAGMENT_SHADER, fragmentSourceFile);
     if (!fragmentShader)
     {
         return 0;
@@ -199,7 +218,7 @@ int main()
 
     stbi_image_free(data);
 
-    quadProgram = createProgram(vertexShader, fragmentShader);
+    quadProgram = createProgram("/shaders/shader.vert", "/shaders/shader.frag");
 
     a_vertex = glGetAttribLocation(quadProgram, "a_vertex");
     a_colors = glGetAttribLocation(quadProgram, "a_colors");
@@ -214,6 +233,7 @@ int main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     emscripten_set_main_loop(loop, 0, 0);
+
     return 0;
 }
 

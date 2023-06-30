@@ -2,6 +2,7 @@
 #include <GLES2/gl2.h>
 #include <GLFW/glfw3.h>
 #include <emscripten.h>
+#include <emscripten/html5.h>
 #include <chrono>
 #include <fstream>
 #include <sstream>
@@ -10,6 +11,7 @@
 #include "stb_image.h"
 #include "vec4.h"
 #include "mat4.h"
+#include "camera.h"
 
 #define CANVAS_WIDTH 800
 #define CANVAS_HEIGHT 600
@@ -17,7 +19,10 @@
 #define STRIDE FLOAT32_BYTE_SIZE*4
 
 void loop();
+void processInput(GLFWwindow* window, double deltaTime);
+void processMouse(GLFWwindow* window, double xposIn, double yposIn);
 
+// Shader and Program Utils
 GLuint loadShader(GLenum shaderType, const char* filePath)
 {
     GLuint shader = glCreateShader(shaderType);
@@ -108,6 +113,7 @@ GLuint createProgram(const char* vertexSourceFile, const char* fragmentSourceFil
     return program;
 }
 
+
 const GLfloat vertices[] = {    
   -0.5, 0.5, 0.0,   // Top left
   -0.5, -0.5, 0.0,  // Bottom left
@@ -154,6 +160,15 @@ GLuint quadProgram = 0;
 GLuint fractalProgram = 0;
 GLFWwindow* window;
 unsigned int texture;
+
+// Camera Set up
+Camera camera;
+double lastX = CANVAS_WIDTH / 2.0;
+double lastY = CANVAS_HEIGHT / 2.0;
+double xpos = 0;
+double ypos = 0;
+
+static int last_state = -1;
 
 int main()
 {
@@ -222,7 +237,7 @@ int main()
 
 void loop()
 {
-    // Create MVP 
+    // Process Time
 	double deltaTime = 0;
 	double lastTime = 0;
 
@@ -231,18 +246,33 @@ void loop()
 	deltaTime = now - lastTime;
 	lastTime = now;
 
+    // Process Inputs
+    glfwGetCursorPos(window, &xpos, &ypos);
+    processInput(window, deltaTime);
+    processMouse(window, xpos, ypos);
+
+    int state = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+
+    if (last_state != state) { // to not spam console
+        last_state = state;
+        printf("glfwGetKey says space pressed? %d\n", state);
+
+    }
+
+    // Change angle with time
     double angle = 0;
 
 	angle += 30 * deltaTime;
     if (angle > 360)
         angle = angle - 360;
 
+    // Build mvp
 	mat4 model;
 	model = scale(model, 1.2);
     model = roll(model, angle);
     model = rotate(model, -55, vec3(1, 0, 0));
 
-    mat4 view = view_mat(vec3(0, 0, -3), vec3(0, 0, 0), vec3(0, 1, 0));
+    mat4 view = camera.GetViewMatrix();
     mat4 proj = projection_mat(60, CANVAS_WIDTH, CANVAS_HEIGHT, 0.1, 100);
 
     mat4 mvp = proj * view * model;
@@ -295,5 +325,36 @@ void loop()
     glUniform1f(timeLoc, static_cast<GLfloat>(deltaTime));
     
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, b_indices);
-
 }
+
+// Input Utils
+void processInput(GLFWwindow* window, double deltaTime)
+{
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		camera.reset();
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.processKeyboard(FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.processKeyboard(BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.processKeyboard(LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.processKeyboard(RIGHT, deltaTime);
+}
+
+void processMouse(GLFWwindow* window, double xposIn, double yposIn)
+{
+	double xpos = xposIn;
+    double ypos = yposIn;
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+
+    lastX = xpos;
+    lastY = ypos;
+
+    camera.processMouseMovement(xoffset, yoffset);
+}
+
+

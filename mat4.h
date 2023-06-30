@@ -1,3 +1,8 @@
+#pragma once
+#ifndef MAT4_H
+#define MAT4_H
+
+
 #include <cmath>
 
 #include "vec4.h"
@@ -221,3 +226,5 @@ inline mat4 projection_mat(double FOV, double width, double height, double near,
 	mat4 proj = { {f / r, 0, 0, 0}, {0, f, 0, 0}, {0, 0, b, -1}, {0, 0, c, 0} };
 	return proj;
 }
+
+#endif

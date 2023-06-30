@@ -115,10 +115,10 @@ GLuint createProgram(const char* vertexSourceFile, const char* fragmentSourceFil
 
 
 const GLfloat vertices[] = {    
-  -0.5, 0.5, 0.0,   // Top left
-  -0.5, -0.5, 0.0,  // Bottom left
-  0.5, -0.5, 0.0,   // Bottom right
-  0.5, 0.5, 0.0     // Top right
+  -0.5, 0.5, -2.0,   // Top left
+  -0.5, -0.5, -2.0,  // Bottom left
+  0.5, -0.5, -2.0,   // Bottom right
+  0.5, 0.5, -2.0     // Top right
 };
 
 const GLfloat b_vertices[] = { 
@@ -129,10 +129,10 @@ const GLfloat b_vertices[] = {
 };
 
 const GLfloat colors[] = {
-  1.0, 0.0, 0.0, 1.0,   // Red (Top left)
-  0.0, 1.0, 0.0, 1.0,   // Green (Bottom left)
-  0.0, 0.0, 1.0, 1.0,   // Blue (Bottom right)
-  1.0, 1.0, 0.0, 1.0    // Yellow (Top right)
+  0.694, 0.784, 0.949,   // Blue (Top left)
+  0.694, 0.784, 0.949,    // Blue (Bottom left)
+  0.694, 0.784, 0.949,   // Blue (Bottom right)
+  0.694, 0.784, 0.949,    // Blue (Top right)
 };
 
 const GLfloat texturecoord[] = {
@@ -167,8 +167,7 @@ double lastX = CANVAS_WIDTH / 2.0;
 double lastY = CANVAS_HEIGHT / 2.0;
 double xpos = 0;
 double ypos = 0;
-
-static int last_state = -1;
+bool firstMouse = true;
 
 int main()
 {
@@ -179,7 +178,7 @@ int main()
         return -1;
     }
 
-    GLFWwindow* window = glfwCreateWindow(CANVAS_WIDTH, CANVAS_HEIGHT, "OpenGL Triangle", nullptr, nullptr);
+    window = glfwCreateWindow(CANVAS_WIDTH, CANVAS_HEIGHT, "WebGl wndow", nullptr, nullptr);
     if (!window)
     {
         std::cerr << "Failed to create GLFW window" << std::endl;
@@ -199,7 +198,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
     int width, height, nrChannels;
-    unsigned char *data = stbi_load("/assets/container.jpg", &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load("/assets/marble-texture.jpg", &width, &height, &nrChannels, 0);
 
     stbi_set_flip_vertically_on_load(true); 
     if (data) {
@@ -230,8 +229,9 @@ int main()
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    emscripten_set_main_loop(loop, 0, 0);
+    emscripten_set_main_loop(loop, 0, 1);
 
+    glfwTerminate();
     return 0;
 }
 
@@ -251,14 +251,6 @@ void loop()
     processInput(window, deltaTime);
     processMouse(window, xpos, ypos);
 
-    int state = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
-
-    if (last_state != state) { // to not spam console
-        last_state = state;
-        printf("glfwGetKey says space pressed? %d\n", state);
-
-    }
-
     // Change angle with time
     double angle = 0;
 
@@ -268,9 +260,9 @@ void loop()
 
     // Build mvp
 	mat4 model;
-	model = scale(model, 1.2);
-    model = roll(model, angle);
-    model = rotate(model, -55, vec3(1, 0, 0));
+    model = translate(model, vec3(0, 37, 0));
+    model = pitch(model, -90);
+	model = scale(model, 20);
 
     mat4 view = camera.GetViewMatrix();
     mat4 proj = projection_mat(60, CANVAS_WIDTH, CANVAS_HEIGHT, 0.1, 100);
@@ -348,8 +340,15 @@ void processMouse(GLFWwindow* window, double xposIn, double yposIn)
 	double xpos = xposIn;
     double ypos = yposIn;
 
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    double xoffset = xpos - lastX;
+    double yoffset = lastY - ypos;
 
     lastX = xpos;
     lastY = ypos;

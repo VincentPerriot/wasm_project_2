@@ -119,9 +119,9 @@ inline mat4 yaw_mat(double angle)
 	double c = cos(degrees_to_radians(angle));
 	double s = sin(degrees_to_radians(angle));
 
-	mat4 pitch_mat = mat4{ {c, 0, -s, 0}, {0, 1, 0, 0}, {s, 0, c, 0}, {0, 0, 0, 1} };
+	mat4 yaw_mat = mat4{ {c, 0, -s, 0}, {0, 1, 0, 0}, {s, 0, c, 0}, {0, 0, 0, 1} };
 
-	return pitch_mat;
+	return yaw_mat;
 }
 
 inline mat4 roll_mat(double angle)
@@ -129,9 +129,9 @@ inline mat4 roll_mat(double angle)
 	double c = cos(degrees_to_radians(angle));
 	double s = sin(degrees_to_radians(angle));
 
-	mat4 pitch_mat = mat4{ {c, s, 0, 0}, {-s, c, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1} };
+	mat4 roll_mat = mat4{ {c, s, 0, 0}, {-s, c, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1} };
 
-	return pitch_mat;
+	return roll_mat;
 }
 
 inline mat4 rotate_mat(double angle, const vec3& axis)

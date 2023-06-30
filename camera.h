@@ -17,8 +17,8 @@ enum Camera_Movement {
 // Default camera values
 const double YAW         = -90.0;
 const double PITCH       =  0.0;
-const double SPEED       =  2.5;
-const double SENSITIVITY =  0.2;
+const double SPEED       =  0.005;
+const double SENSITIVITY =  0.1;
 
 class Camera
 {
@@ -40,8 +40,8 @@ public:
     double MouseSensitivity;
 
     // constructor
-    Camera(vec3 position = vec3(0.0f, 1.0f, 3.0f), vec3 up = vec3(0.0f, 1.0f, 0.0f), float yaw = YAW,
-        double pitch = PITCH) : Front(vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY)
+    Camera(vec3 position = vec3(0.0, 0.0, 5.0), vec3 up = vec3(0.0, 1.0, 0.0), float yaw = YAW,
+        double pitch = PITCH) : Front(vec3(0.0, 0.0, 1.0)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY)
     {
         Position = position;
         WorldUp = up;
@@ -53,10 +53,10 @@ public:
 
     void reset()
     {
-        Position = vec3(0.0f, 1.0f, 3.0f);
+        Position = vec3(0.0, 0.0, -3.0);
         Yaw = YAW;
         Pitch = PITCH;
-        WorldUp = vec3(0.0f, 1.0f, 0.0f);
+        WorldUp = vec3(0.0, 1.0, 0.0);
 
         updateCameraVectors();
     }
@@ -70,8 +70,8 @@ public:
         Pitch += yoffset;
 
         // make sure that when pitch is out of bounds, screen doesn't get flipped
-        if (Pitch > 89.0f) Pitch = 89.0f;
-        if (Pitch < -89.0f) Pitch = -89.0f;
+        if (Pitch > 89.0) Pitch = 89.0;
+        if (Pitch < -89.0) Pitch = -89.0;
 
         updateCameraVectors();
     }
@@ -84,12 +84,30 @@ public:
         if (direction == BACKWARD)
             Position -= Front * velocity;
         if (direction == LEFT)
-            Position -= Right * velocity;
-        if (direction == RIGHT)
+            //TODO inverted, fix later
             Position += Right * velocity;
-
-        updateCameraVectors();
+        if (direction == RIGHT)
+            Position -= Right * velocity;
+        // make sure the user stays at the ground level
+        Position[1] = 0.0;
     }
+
+	void moveModelAlong(Camera_Movement direction, double deltaTime, mat4 model)
+    {
+        double velocity = MovementSpeed * deltaTime;
+        if (direction == FORWARD)
+            vec3(model.c3.x(), model.c3.y(), model.c3.z()) += Front * velocity;
+        if (direction == BACKWARD)
+            Position -= Front * velocity;
+        if (direction == LEFT)
+            //TODO inverted, fix later
+            Position += Right * velocity;
+        if (direction == RIGHT)
+            Position -= Right * velocity;
+        // make sure the user stays at the ground level
+        Position[1] = 0.0;
+    }
+
 
     // returns the view matrix calculated using Euler Angles and the LookAt Matrix
     inline mat4 GetViewMatrix()
@@ -103,7 +121,7 @@ private:
     {
         // calculate the new Front vector
         vec3 front;
-        front[0] = cos(degrees_to_radians(Yaw)) * cos(degrees_to_radians(Pitch));
+        front[0] = -(cos(degrees_to_radians(Yaw)) * cos(degrees_to_radians(Pitch)));
         front[1] = sin(degrees_to_radians(Pitch));
         front[2] = sin(degrees_to_radians(Yaw)) * cos(degrees_to_radians(Pitch));
         Front = unit_vector(front);

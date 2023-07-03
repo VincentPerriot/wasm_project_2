@@ -1,6 +1,10 @@
+#version 300 es
+
 precision mediump float;
 
 uniform float time;
+
+out vec4 FragColor;
 
 vec3 palette( float t )
 {
@@ -41,5 +45,5 @@ void main()
 		finalColor += col * d;
 	}
 
-	gl_FragColor = vec4(finalColor, 1.0);
+	FragColor = vec4(finalColor, 1.0);
 }

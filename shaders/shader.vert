@@ -1,11 +1,13 @@
-attribute vec4 a_vertex; // vertex position 
-attribute vec3 a_colors; // vertex colors
-attribute vec2 a_texcoord; // texture coordinates
+#version 300 es
+
+layout (location = 0) in vec4 a_vertex; // vertex position 
+layout (location = 1) in vec3 a_colors; // vertex colors
+layout (location = 2) in vec2 a_texcoord; // texture coordinates
 
 uniform mat4 mvp;
 
-varying vec2 v_texcoord;
-varying vec3 v_colors;
+out vec2 v_texcoord;
+out vec3 v_colors;
 
 void main()
 {

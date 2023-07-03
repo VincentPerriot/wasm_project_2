@@ -1,5 +1,5 @@
 ﻿#include <iostream>
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 #include <GLFW/glfw3.h>
 #include <emscripten.h>
 #include <emscripten/html5.h>
@@ -12,15 +12,16 @@
 #include "vec4.h"
 #include "mat4.h"
 #include "camera.h"
+#include "./assets/vertices.h"
 
 #define CANVAS_WIDTH 800
 #define CANVAS_HEIGHT 600
-#define FLOAT32_BYTE_SIZE 4
-#define STRIDE FLOAT32_BYTE_SIZE*4
 
 void loop();
 void processInput(GLFWwindow* window, double deltaTime);
 void processMouse(GLFWwindow* window, double xposIn, double yposIn);
+unsigned int loadCubeMap(std::vector<std::string> faces);
+
 
 // Shader and Program Utils
 GLuint loadShader(GLenum shaderType, const char* filePath)
@@ -152,14 +153,11 @@ const GLushort b_indices[] = {
 	0, 2, 3  // second triangle
 };
 
-GLint a_vertex = 0;
-GLint b_vertex = 0;
-GLint a_colors = 0;
-GLint a_texcoord = 0;
 GLuint quadProgram = 0;
 GLuint fractalProgram = 0;
+GLuint skyboxProgram = 0;
+GLuint skyboxVAO, skyboxVBO;
 GLFWwindow* window;
-unsigned int texture;
 
 // Camera Set up
 Camera camera;
@@ -168,6 +166,14 @@ double lastY = CANVAS_HEIGHT / 2.0;
 double xpos = 0;
 double ypos = 0;
 bool firstMouse = true;
+
+// Process Time
+double deltaTime = 0;
+double lastTime = 0;
+
+// Textures init
+unsigned int texture;
+unsigned int cubemapTexture;
 
 int main()
 {
@@ -213,16 +219,39 @@ int main()
 
     quadProgram = createProgram("/shaders/shader.vert", "/shaders/shader.frag");
 
-    a_vertex = glGetAttribLocation(quadProgram, "a_vertex");
-    a_colors = glGetAttribLocation(quadProgram, "a_colors");
-    a_texcoord = glGetAttribLocation(quadProgram, "a_texcoord");
+    glUseProgram(quadProgram);
 
     fractalProgram = createProgram("/shaders/shader_2.vert", "/shaders/shader_2.frag");
-    b_vertex = glGetAttribLocation(fractalProgram, "b_vertex");
-
     glUseProgram(fractalProgram);
-    glUseProgram(quadProgram);
-    glUniform1i(glGetUniformLocation(quadProgram, "texture"), 0);
+    
+    /*
+	// Skybox program
+    skyboxProgram = createProgram("/shaders/skybox.vert", "/shaders/skybox.frag");
+    // As this is more than just 2 trianlges we create VAO / VBO
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    
+    unsigned int VAOLoc = glGetAttribLocation(skyboxProgram, "c_vertex");
+    glEnableVertexAttribArray(VAOLoc);
+    glVertexAttribPointer(VAOLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), skyboxVertices);
+
+	std::vector<std::string> faces {
+		"/assets/skybox/right.jpg",
+		"/assets/skybox/left.jpg",
+		"/assets/skybox/top.jpg",
+		"/assets/skybox/bottom.jpg",
+		"/assets/skybox/front.jpg",
+		"/assets/skybox/back.jpg"
+	};
+
+    cubemapTexture = loadCubeMap(faces);
+
+    glUseProgram(skyboxProgram);
+    //glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
+    */
 
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
@@ -231,16 +260,15 @@ int main()
 
     emscripten_set_main_loop(loop, 0, 1);
 
+    glDeleteVertexArrays(1, &skyboxVAO);
+    glDeleteBuffers(1, &skyboxVBO);
+
     glfwTerminate();
     return 0;
 }
 
 void loop()
 {
-    // Process Time
-	double deltaTime = 0;
-	double lastTime = 0;
-
 	double now = glfwGetTime();
 
 	deltaTime = now - lastTime;
@@ -279,21 +307,19 @@ void loop()
     glBindTexture(GL_TEXTURE_2D, texture);
 
 	// position attribute
-    glVertexAttribPointer(a_vertex, 3, GL_FLOAT, GL_FALSE, 0, vertices);
-    glEnableVertexAttribArray(a_vertex);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+    glEnableVertexAttribArray(0);
 
     // color attribute
-    glVertexAttribPointer(a_colors, 3, GL_FLOAT, GL_FALSE, 0, colors);
-    glEnableVertexAttribArray(a_colors);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, colors);
+    glEnableVertexAttribArray(1);
 
     // Texture attribute
-    glVertexAttribPointer(a_texcoord, 2, GL_FLOAT, GL_FALSE, 0, texturecoord);
-    glEnableVertexAttribArray(a_texcoord);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, texturecoord);
+    glEnableVertexAttribArray(2);
 
     unsigned int mvpLoc = glGetUniformLocation(quadProgram, "mvp");
-
     std::vector<float> formattedMVP = mvp.toFloatVector();
-
 	glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedMVP.data()));
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, indices);
@@ -302,8 +328,8 @@ void loop()
     // Begin Fractal program
     glUseProgram(fractalProgram);
 	// Shaders2 position attribute
-    glVertexAttribPointer(b_vertex, 3, GL_FLOAT, GL_FALSE, 0, b_vertices);
-    glEnableVertexAttribArray(b_vertex);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, b_vertices);
+    glEnableVertexAttribArray(0);
 
     mat4 model2;
     mat4 mvp2 = proj * view * model2;
@@ -312,11 +338,34 @@ void loop()
     unsigned int timeLoc = glGetUniformLocation(fractalProgram, "time");
 
     std::vector<float> formattedMVP2 = mvp2.toFloatVector();
-
 	glUniformMatrix4fv(mvpLoc2, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedMVP2.data()));
-    glUniform1f(timeLoc, static_cast<GLfloat>(deltaTime));
-    
+
+    glUniform1f(timeLoc, static_cast<GLfloat>(now));
+
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, b_indices);
+    
+    /*
+    // Begin skybox program
+    glDepthFunc(GL_LEQUAL);
+    glUseProgram(skyboxProgram);
+
+    mat4 model3;
+    mat4 mvp3 = proj * view * model3;
+    
+    unsigned int mvpLoc3 = glGetUniformLocation(skyboxProgram, "mvp");
+    std::vector<float> formattedMVP3 = mvp3.toFloatVector();
+	glUniformMatrix4fv(mvpLoc3, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedMVP3.data()));
+    
+
+   // skybox cube
+   glBindVertexArray(skyboxVAO);
+   //glActiveTexture(GL_TEXTURE0);
+   //glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+   glDrawArrays(GL_TRIANGLES, 0, 36);
+   glBindVertexArray(0);
+ 
+   glDepthFunc(GL_LESS); // set depth function back to default
+    */
 }
 
 // Input Utils
@@ -356,4 +405,34 @@ void processMouse(GLFWwindow* window, double xposIn, double yposIn)
     camera.processMouseMovement(xoffset, yoffset);
 }
 
+unsigned int loadCubeMap(std::vector<std::string> faces)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
+    int width, height, nrChannels;
+    for (int i = 0; i < faces.size(); i++)
+    {
+        unsigned char* skybox_data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (skybox_data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height,
+                0, GL_RGB, GL_UNSIGNED_BYTE, skybox_data);
+            stbi_image_free(skybox_data);
+        }
+        else
+        {
+            std::cout << "Failed to load cubemap at: " << faces[i] << std::endl;
+            stbi_image_free(skybox_data);
+        }
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}

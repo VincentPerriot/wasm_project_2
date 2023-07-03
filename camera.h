@@ -17,7 +17,7 @@ enum Camera_Movement {
 // Default camera values
 const double YAW         = -90.0;
 const double PITCH       =  0.0;
-const double SPEED       =  0.005;
+const double SPEED       =  2.0;
 const double SENSITIVITY =  0.1;
 
 class Camera
@@ -53,7 +53,7 @@ public:
 
     void reset()
     {
-        Position = vec3(0.0, 0.0, -3.0);
+        Position = vec3(0.0, 0.0, 5.0);
         Yaw = YAW;
         Pitch = PITCH;
         WorldUp = vec3(0.0, 1.0, 0.0);

@@ -2,7 +2,7 @@
 
 ## Displaying 3D models and shader art inside an interactive museum
 
-![web_assembly](https://github.com/VincentPerriot/wasm_project_2/assets/32515747/5f024656-c4cd-4360-8855-2b13f15c787b)
+![museum2](https://github.com/VincentPerriot/wasm_project_2/assets/32515747/73889368-d93b-442f-a620-6338b5b20d14)
 
 #### Work in progress
 

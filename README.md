@@ -6,6 +6,8 @@
 
 #### Work in progress
 
-#### Website built mostly for learning purpose, no maths library used.
+#### Website built mostly for learning purposes, no maths library used.
 
+#### Link
+https://vincentperriot.github.io/wasm_portfolio.github.io/
 

@@ -28,7 +28,9 @@ add_executable(${PROJECT_NAME} ${SOURCES}  "stb_image.h" "vec3.h" "maths.h" "cam
 set_target_properties(${PROJECT_NAME} PROPERTIES
     SUFFIX ".html"
     COMPILE_FLAGS ""
-    #Use later for custom html and CSS
-    #LINK_FLAGS "-s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1 --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html --preload-file"
-    LINK_FLAGS "-s USE_GLFW=3 -s FULL_ES3 -s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1 --preload-file ../../../assets --preload-file ../../../shaders"
+    OUTPUT_NAME "wasm_project_2"
+
+    LINK_FLAGS "--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html 
+        -s USE_GLFW=3 -s FULL_ES3 -s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1 
+        --preload-file ../../../assets --preload-file ../../../shaders "
 )

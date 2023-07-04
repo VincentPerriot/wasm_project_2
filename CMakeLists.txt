@@ -32,5 +32,5 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
     LINK_FLAGS "--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html 
         -s USE_GLFW=3 -s FULL_ES3 -s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1 
-        --preload-file ../../../assets --preload-file ../../../shaders "
+        --preload-file ../../../assets --preload-file ../../../shaders"
 )

@@ -117,10 +117,10 @@ GLuint createProgram(const char* vertexSourceFile, const char* fragmentSourceFil
 
 const GLfloat vertices[] = {    
    //Positions      //colors            // TextureCoord
-  -0.5, 0.5, -2.0, 0.694, 0.784, 0.949, 0.0, 1.0,// Top left
-  -0.5, -0.5, -2.0, 0.694, 0.784, 0.949, 0.0, 0.0, // Bottom left
-   0.5, -0.5, -2.0, 0.694, 0.784, 0.949, 1.0, 0.0,// Bottom right
-   0.5, 0.5, -2.0, 0.694, 0.784, 0.949, 1.0, 1.0  // Top right
+  -0.5, 0.5, 0.0, 0.694, 0.784, 0.949, 0.0, 1.0,// Top left
+  -0.5, -0.5, 0.0, 0.694, 0.784, 0.949, 0.0, 0.0, // Bottom left
+   0.5, -0.5, 0.0, 0.694, 0.784, 0.949, 1.0, 0.0,// Bottom right
+   0.5, 0.5, 0.0, 0.694, 0.784, 0.949, 1.0, 1.0  // Top right
 };
 
 const GLfloat b_vertices[] = { 
@@ -313,24 +313,8 @@ void loop()
     processInput(window, deltaTime);
     processMouse(window, xpos, ypos);
 
-    // Change angle with time
-    double angle = 0;
-
-	angle += 30 * deltaTime;
-    if (angle > 360)
-        angle = angle - 360;
-
-
     mat4 view = camera.GetViewMatrix();
     mat4 proj = projection_mat(60, CANVAS_WIDTH, CANVAS_HEIGHT, 0.1, 100);
-
-    // Build mvp and start quad rendering program
-	mat4 model;
-    model = translate(model, vec3(0, 37, 0));
-    model = pitch(model, -90);
-	model = scale(model, 20);
-
-    mat4 mvp = proj * view * model;
 
     glClearColor( 0.1, 0.1, 0.2, 1 );
     glClear( GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT );
@@ -340,13 +324,39 @@ void loop()
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
+    
+    glBindVertexArray(quadVAO);
+
+   // Build mvp, use model for tiling and start quad rendering program
+	mat4 model;
 
     unsigned int mvpLoc = glGetUniformLocation(quadProgram, "mvp");
-    std::vector<float> formattedMVP = mvp.toFloatVector();
-	glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedMVP.data()));
+    mat4 model0 = model;
+    for (int i = 0; i < 8; i++)
+    {
+        model = translate(model0, vec3(-12 + 4 * i, -2, 0));
+        model = pitch(model, -90);
+	    model = scale(model, 4);
 
-    glBindVertexArray(quadVAO);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+        mat4 mvp = proj * view * model;
+        std::vector<float> formattedMVP = mvp.toFloatVector();
+        glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedMVP.data()));
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+        for (int j = 0; j < 8; j++)
+        {
+			model = translate(model0, vec3(-12 + 4 * i, -2, -12 + 4 * j));
+			model = pitch(model, -90);
+			model = scale(model, 4);
+
+			mat4 mvp = proj * view * model;
+			std::vector<float> formattedMVP = mvp.toFloatVector();
+			glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedMVP.data()));
+            
+            if (j != 3)
+			    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+        }
+    }
     glBindVertexArray(0);
     
     // Begin Fractal program

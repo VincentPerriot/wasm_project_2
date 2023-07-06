@@ -116,11 +116,11 @@ GLuint createProgram(const char* vertexSourceFile, const char* fragmentSourceFil
 
 
 const GLfloat vertices[] = {    
-   //Positions      //colors            // TextureCoord
-  -0.5, 0.5, 0.0, 0.694, 0.784, 0.949, 0.0, 1.0,// Top left
-  -0.5, -0.5, 0.0, 0.694, 0.784, 0.949, 0.0, 0.0, // Bottom left
-   0.5, -0.5, 0.0, 0.694, 0.784, 0.949, 1.0, 0.0,// Bottom right
-   0.5, 0.5, 0.0, 0.694, 0.784, 0.949, 1.0, 1.0  // Top right
+   //Positions      //Colors          //Texture    //Normal
+  -0.5, 0.5, 0.0, 0.694, 0.784, 0.949, 0.0, 1.0, 0.0, 0.0, -1.0, // Top left
+  -0.5, -0.5, 0.0, 0.694, 0.784, 0.949, 0.0, 0.0, 0.0, 0.0, -1.0, // Bottom left
+   0.5, -0.5, 0.0, 0.694, 0.784, 0.949, 1.0, 0.0, 0.0, 0.0, -1.0,// Bottom right
+   0.5, 0.5, 0.0, 0.694, 0.784, 0.949, 1.0, 1.0, 0.0, 0.0, -1.0 // Top right
 };
 
 const GLfloat b_vertices[] = { 
@@ -141,7 +141,7 @@ const GLushort b_indices[] = {
 };
 
 // Set point at origin
-GLfloat pointPosition[24] = { 0.0, 5.0, -8.0 };
+GLfloat pointPosition[24] = { 0.0, 5.0, -9.0 };
 // Set the point size
 GLfloat pointSize = 150.0f;
 // Set the point color
@@ -171,7 +171,7 @@ double deltaTime = 0;
 double lastTime = 0;
 
 // Textures init
-unsigned int texture;
+unsigned int tex;
 unsigned int cubemapTexture;
 
 
@@ -197,10 +197,11 @@ int main()
     glfwMakeContextCurrent(window);
     glfwWindowHint(GLFW_SAMPLES, 4);
 
+
     // QUAD PROG, starting with textures
     quadProgram = createProgram("/shaders/shader.vert", "/shaders/shader.frag");
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
     // set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -235,21 +236,25 @@ int main()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     // Color Attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
     // Texture data
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
+    // Normal Data
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(8 * sizeof(float)));
+	glEnableVertexAttribArray(3);
 
     // Activate shaders before sending texture uniform
     glUseProgram(quadProgram);
-    glUniform1i(glGetUniformLocation(quadProgram, "texture"), 0);
+    glUniform1i(glGetUniformLocation(quadProgram, "material.tex"), 0);
     
     // Unbind VAO
     glBindVertexArray(0);
+
 
     // Fractal Program
     fractalProgram = createProgram("/shaders/shader_2.vert", "/shaders/shader_2.frag");
@@ -272,6 +277,42 @@ int main()
 
 	// Unbind VAO
     glBindVertexArray(0);
+
+
+	// BillBoard lights Progam
+    b_lightProgram = createProgram("/shaders/b_light.vert", "/shaders/b_light.frag");
+    // Create Buffers for Fractal Program
+    glGenVertexArrays(1, &b_lightVAO);
+    glGenBuffers(1, &b_lightVBO);
+
+    glBindVertexArray(b_lightVAO);
+
+	for (int i = 0; i < 7; i++)
+    {
+        double theta = degrees_to_radians(45);
+        vec3 posVec = vec3(static_cast<double>(pointPosition[3 * i]), 
+            static_cast<double>(pointPosition[1 + 3 * i]), 
+            static_cast<double>(pointPosition[2 + 3 * i]));
+
+        vec3 nextLight = vec3(cos(theta) * posVec.x() + sin(theta) * posVec.z(),
+            posVec.y(),
+            -(sin(theta) * posVec.x()) + cos(theta) * posVec.z());
+
+        pointPosition[3 + 3 * i] = static_cast<GLfloat>(round(nextLight.x()));
+        pointPosition[4 + 3 * i] = static_cast<GLfloat>(round(nextLight.y()));
+        pointPosition[5 + 3 * i] = static_cast<GLfloat>(round(nextLight.z()));
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, b_lightVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(pointPosition), pointPosition, GL_STATIC_DRAW);
+
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+	// Unbind VAO
+    glBindVertexArray(0);
+
 
 	// Skybox program
     skyboxProgram = createProgram("/shaders/skybox.vert", "/shaders/skybox.frag");
@@ -304,44 +345,6 @@ int main()
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
 
 
-	// BillBoard lights PROG
-    b_lightProgram = createProgram("/shaders/b_light.vert", "/shaders/b_light.frag");
-    // Create Buffers for Fractal Program
-    glGenVertexArrays(1, &b_lightVAO);
-    glGenBuffers(1, &b_lightVBO);
-
-    glBindVertexArray(b_lightVAO);
-
-	for (int i = 0; i < 7; i++)
-    {
-        double theta = degrees_to_radians(45);
-        vec3 posVec = vec3(static_cast<double>(pointPosition[3 * i]), 
-            static_cast<double>(pointPosition[1 + 3 * i]), 
-            static_cast<double>(pointPosition[2 + 3 * i]));
-
-        vec3 nextLight = vec3(cos(theta) * posVec.x() + sin(theta) * posVec.z(),
-            posVec.y(),
-            -(sin(theta) * posVec.x()) + cos(theta) * posVec.z());
-
-        pointPosition[3 + 3 * i] = static_cast<GLfloat>(round(nextLight.x()));
-        pointPosition[4 + 3 * i] = static_cast<GLfloat>(round(nextLight.y()));
-        pointPosition[5 + 3 * i] = static_cast<GLfloat>(round(nextLight.z()));
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, b_lightVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(pointPosition), pointPosition, GL_STATIC_DRAW);
-
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    for (auto num : pointPosition)
-        std::cout << num << std::endl;
-
-    glEnableVertexAttribArray(0);
-
-	// Unbind VAO
-    glBindVertexArray(0);
-
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 
@@ -366,6 +369,7 @@ void loop()
 
     mat4 view = camera.GetViewMatrix();
     mat4 proj = projection_mat(60, CANVAS_WIDTH, CANVAS_HEIGHT, 0.1, 100);
+	mat4 vp = proj * view;
 
     glClearColor(0.1, 0.1, 0.2, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -375,14 +379,36 @@ void loop()
     glUseProgram(quadProgram);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, tex);
 
     glBindVertexArray(quadVAO);
 
-    // Build mvp, use model for tiling and start quad rendering program
-    mat4 model;
+    unsigned int shineLoc = glGetUniformLocation(quadProgram, "material.shininess");
+    glUniform1f(shineLoc, 32.0f);
 
-    unsigned int mvpLoc = glGetUniformLocation(quadProgram, "mvp");
+    mat4 vp1 = vp;
+    unsigned int vpLoc = glGetUniformLocation(quadProgram, "vp");
+    std::vector<float> formattedVP1 = vp1.toFloatVector();
+	glUniformMatrix4fv(vpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedVP1.data()));
+
+    mat4 model;
+    unsigned int modelLoc = glGetUniformLocation(quadProgram, "model");
+
+    // Light loop
+    for (GLuint i = 0; i < 8; i++)
+    {
+        std::string num = std::to_string(i);
+
+        glUniform3f(glGetUniformLocation(quadProgram, ("pointLights[" + num + "].position").c_str()),
+            pointPosition[0 + i * 3], pointPosition[1 + i * 3], pointPosition[2 + i * 3]);
+        glUniform3f(glGetUniformLocation(quadProgram,("pointLights[" + num + "].ambient").c_str()), 0.1f, 0.1f, 0.1f);
+        glUniform3f(glGetUniformLocation(quadProgram, ("pointLights[" + num + "].diffuse").c_str()), 0.3f, 0.3f, 0.3f);
+        glUniform3f(glGetUniformLocation(quadProgram, ("pointLights[" + num + "].specular").c_str()), 0.5f, 0.5f, 0.5f);
+        glUniform1f(glGetUniformLocation(quadProgram, ("pointLights[" + num + "].constant").c_str()), 1.0f);
+        glUniform1f(glGetUniformLocation(quadProgram, ("pointLights[" + num + "].linear").c_str()), 0.09f);
+        glUniform1f(glGetUniformLocation(quadProgram, ("pointLights[" + num + "].quadratic").c_str()), 0.0032f);
+    }
+
     mat4 model0 = model;
     for (int i = 0; i < 8; i++)
     {
@@ -390,9 +416,9 @@ void loop()
         model = pitch(model, -90);
         model = scale(model, 4);
 
-        mat4 mvp = proj * view * model;
-        std::vector<float> formattedMVP = mvp.toFloatVector();
-        glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedMVP.data()));
+        std::vector<float> formattedModel = model.toFloatVector();
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedModel.data()));
+
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
         for (int j = 0; j < 8; j++)
@@ -401,14 +427,21 @@ void loop()
             model = pitch(model, -90);
             model = scale(model, 4);
 
-            mat4 mvp = proj * view * model;
-            std::vector<float> formattedMVP = mvp.toFloatVector();
-            glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedMVP.data()));
+			std::vector<float> formattedModel = model.toFloatVector();
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedModel.data()));
 
             if (j != 3)
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
         }
     }
+
+    GLfloat camPos[] = {static_cast<GLfloat>(camera.Position.x()),
+        static_cast<GLfloat>(camera.Position.y()),
+        static_cast<GLfloat>(camera.Position.z())};
+
+	unsigned int viewPosLoc = glGetUniformLocation(quadProgram, "viewPos");
+    glUniform3fv(viewPosLoc, 1, camPos);
+
     glBindVertexArray(0);
 
 
@@ -432,13 +465,13 @@ void loop()
 
 
 	// Begin skybox program
-	mat4 vp = proj * view;
+	mat4 vp2 = proj * view;
     glDepthFunc(GL_LEQUAL);
     glUseProgram(skyboxProgram);
 
-    unsigned int vpLoc = glGetUniformLocation(skyboxProgram, "vp");
-    std::vector<float> formattedVP = vp.toFloatVector();
-	glUniformMatrix4fv(vpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedVP.data()));
+    unsigned int vp2Loc = glGetUniformLocation(skyboxProgram, "vp");
+    std::vector<float> formattedVP2 = vp2.toFloatVector();
+	glUniformMatrix4fv(vp2Loc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedVP2.data()));
  
     // skybox cube
     glBindVertexArray(skyboxVAO);

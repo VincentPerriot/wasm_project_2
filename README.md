@@ -9,5 +9,5 @@
 #### Website built mostly for learning purposes, no maths library used.
 
 #### Link
-https://vincentperriot.github.io/wasm_portfolio.github.io/
+https://vincentperriot.github.io/wasm_site.github.io/
 

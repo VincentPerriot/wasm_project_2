@@ -431,6 +431,25 @@ void loop()
     glBindVertexArray(0);
 
 
+	// Begin skybox program
+	mat4 vp = proj * view;
+    glDepthFunc(GL_LEQUAL);
+    glUseProgram(skyboxProgram);
+
+    unsigned int vpLoc = glGetUniformLocation(skyboxProgram, "vp");
+    std::vector<float> formattedVP = vp.toFloatVector();
+	glUniformMatrix4fv(vpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedVP.data()));
+ 
+    // skybox cube
+    glBindVertexArray(skyboxVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
+ 
+    glDepthFunc(GL_LESS); // set depth function back to default
+	
+
     //Begin billboard Light program
     glUseProgram(b_lightProgram);
     glBindVertexArray(b_lightVAO);
@@ -455,24 +474,6 @@ void loop()
     glDrawArrays(GL_POINTS, 0, 8);
     glBindVertexArray(0);
 
-
-	// Begin skybox program
-	mat4 vp = proj * view;
-    glDepthFunc(GL_LEQUAL);
-    glUseProgram(skyboxProgram);
-
-    unsigned int vpLoc = glGetUniformLocation(skyboxProgram, "vp");
-    std::vector<float> formattedVP = vp.toFloatVector();
-	glUniformMatrix4fv(vpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedVP.data()));
- 
-    // skybox cube
-    glBindVertexArray(skyboxVAO);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glBindVertexArray(0);
- 
-    glDepthFunc(GL_LESS); // set depth function back to default
 }
 
 // Input Utils

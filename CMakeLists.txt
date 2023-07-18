@@ -22,7 +22,7 @@ find_package(OpenGL REQUIRED)
 set(SOURCES shell.cpp)
 
 # Create the executable
-add_executable(${PROJECT_NAME} ${SOURCES}  "stb_image.h" "vec3.h" "maths.h" "camera.h" "vec4.h" "mat4.h"  "assets/vertices.h" )
+add_executable(${PROJECT_NAME} ${SOURCES}  "stb_image.h" "vec3.h" "maths.h" "camera.h" "vec4.h" "mat4.h" "assets/vertices.h" "mesh.h" "model.h" "vec2.h")
 
 # Set Emscripten-specific options
 set_target_properties(${PROJECT_NAME} PROPERTIES

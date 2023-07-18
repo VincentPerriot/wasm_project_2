@@ -12,6 +12,8 @@
 #include "vec4.h"
 #include "mat4.h"
 #include "camera.h"
+#include "mesh.h"
+
 #include "./assets/vertices.h"
 
 #define CANVAS_WIDTH 800

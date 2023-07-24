@@ -9,9 +9,9 @@
 
 struct Vertex {
 	vec3 Pos;
-	vec3 Normal;
-
+	vec3 Colors;
 	vec2 TexUV;
+	vec3 Normal;
 };
 
 struct Texture {

@@ -1,5 +1,6 @@
 /.vs/**
 /out/**
 /third_party/**
+/assets/**
 shell.css
 shell.html

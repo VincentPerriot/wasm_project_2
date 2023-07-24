@@ -409,7 +409,6 @@ void loop()
     // Send Model matrix for backpack model to shaders
 	ourModel.Draw(quadProgram);
 
-
     // Light loop
     for (GLuint i = 0; i < 8; i++)
     {

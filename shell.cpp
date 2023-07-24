@@ -8,14 +8,11 @@
 #include <sstream>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 #include "vec4.h"
 #include "mat4.h"
 #include "camera.h"
 #include "mesh.h"
-
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
+#include "model.h"
 
 #include "./assets/vertices.h"
 
@@ -179,17 +176,12 @@ double lastTime = 0;
 unsigned int tex;
 unsigned int cubemapTexture;
 
+char* path = (char*)"/assets/backpack/backpack.obj";
+Model ourModel(path);
+
 
 int main()
 {
-
-    Assimp::Importer importer;
-
-    const aiScene* scene = importer.ReadFile("", 0);
-
-    if (scene == nullptr)
-        std::cout << "Nothing to load" << std::endl;
-
     if (!glfwInit())
     {
         std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -212,6 +204,7 @@ int main()
 
     // QUAD PROG, starting with textures
     quadProgram = createProgram("/shaders/shader.vert", "/shaders/shader.frag");
+
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
     // set the texture wrapping/filtering options (on the currently bound texture object)
@@ -403,8 +396,19 @@ void loop()
     std::vector<float> formattedVP1 = vp1.toFloatVector();
 	glUniformMatrix4fv(vpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedVP1.data()));
 
+	// render the loaded model
     mat4 model;
-    unsigned int modelLoc = glGetUniformLocation(quadProgram, "model");
+	unsigned int modelLoc = glGetUniformLocation(quadProgram, "model");
+
+	model = translate(model, vec3(3.0, 0.0, 0.0));
+	model = scale(model, 1.0);	// it's a bit too big for our scene, so scale it down
+
+    std::vector<float> formattedModel = model.toFloatVector();
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedModel.data()));
+
+    // Send Model matrix for backpack model to shaders
+	ourModel.Draw(quadProgram);
+
 
     // Light loop
     for (GLuint i = 0; i < 8; i++)

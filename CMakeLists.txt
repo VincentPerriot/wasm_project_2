@@ -22,7 +22,7 @@ find_package(OpenGL REQUIRED)
 set(SOURCES shell.cpp)
 
 # Create the executable
-add_executable(${PROJECT_NAME} ${SOURCES}  "stb_image.h" "vec3.h" "maths.h" "camera.h" "vec4.h" "mat4.h" "assets/vertices.h" "mesh.h" "model.h" "vec2.h")
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Set Emscripten-specific options
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -36,7 +36,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 #ASSIMP
-
 set (BUILD_SHARED_LIBS OFF CACHE BOOL "")
 set (ASSIMP_BUILD_TESTS OFF CACHE BOOL "")
 set (ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "")
@@ -59,7 +58,8 @@ set (ASSIMP_BUILD_TERRAGEN_IMPORTER OFF CACHE BOOL "")
 set (ASSIMP_BUILD_IFC_IMPORTER OFF CACHE BOOL "")
 add_subdirectory(third_party/assimp)
 
-# Include the Assimp headers
-include_directories(${PROJECT_NAME} PRIVATE third_party/assimp/include)
-# Link the Assimp .lib file with your project
-target_link_libraries(${PROJECT_NAME} assimp)
+# Include Assimp headers
+target_include_directories(${PROJECT_NAME} PRIVATE third_party/assimp/include)
+
+# Link Assimp
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp)

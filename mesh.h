@@ -10,7 +10,6 @@
 struct Vertex {
 	vec3 Pos;
 	vec3 Normal;
-	vec3 Color;
 
 	vec2 TexUV;
 };
@@ -42,6 +41,40 @@ public:
 	
 	void Draw(GLuint programID)
 	{
+		unsigned int diffuseNum = 1;
+		unsigned int specularNum = 1;
+		unsigned int normalNum = 1;
+		unsigned int heightNum = 1;
+		
+		for (unsigned int i = 0; i < textures.size(); i++)
+		{
+			// Activate proper texture unit
+			glActiveTexture(GL_TEXTURE0 + i);
+			std::string number;
+			std::string name = textures[i].type;
+
+			if (name == "texture_diffuse")
+				number = std::to_string(diffuseNum++);
+			else if (name == "texture_specular")
+				number = std::to_string(specularNum++);
+			else if (name == "texture_normal")
+				number = std::to_string(normalNum++);
+			else if (name == "texture_height")
+				number = std::to_string(heightNum++);
+
+			// Set sampler to tex unit
+			glUniform1i(glGetUniformLocation(programID, (name + number).c_str()), i);
+			// Bind tex
+			glBindTexture(GL_TEXTURE_2D, textures[i].id);
+		}
+
+		// draw mesh
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);
+
+		// Set everything back to default
+		glBindVertexArray(0);
+		glActiveTexture(GL_TEXTURE0);
 
 	}
 private:
@@ -70,13 +103,9 @@ private:
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
 
-		// Set color ptr
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
-
 		// Set TextUV ptr
 		glEnableVertexAttribArray(3);
-		glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexUV));
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexUV));
 
 		// Unbind VAO
 		glBindVertexArray(0);

@@ -14,6 +14,9 @@
 #include "camera.h"
 #include "mesh.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+
 #include "./assets/vertices.h"
 
 #define CANVAS_WIDTH 800
@@ -179,6 +182,13 @@ unsigned int cubemapTexture;
 
 int main()
 {
+
+    Assimp::Importer importer;
+
+    const aiScene* scene = importer.ReadFile("", 0);
+
+    if (scene == nullptr)
+        std::cout << "Nothing to load" << std::endl;
 
     if (!glfwInit())
     {

@@ -34,3 +34,32 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
         -s USE_GLFW=3 -s FULL_ES3 -s ALLOW_MEMORY_GROWTH=1 -s USE_WEBGL2=1 
         --preload-file ../../../assets --preload-file ../../../shaders"
 )
+
+#ASSIMP
+
+set (BUILD_SHARED_LIBS OFF CACHE BOOL "")
+set (ASSIMP_BUILD_TESTS OFF CACHE BOOL "")
+set (ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "")
+set (ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "")
+set (ASSIMP_BUILD_ASSJSON_EXPORTER ON CACHE BOOL "")
+set (ASSIMP_BUILD_GLTF_EXPORTER ON CACHE BOOL "")
+
+# undefined behaviour because of alignment issues, crashes and memory leaks
+set (ASSIMP_BUILD_M3D_IMPORTER OFF CACHE BOOL "")
+# assertion failed because of a memory error
+set (ASSIMP_BUILD_RAW_IMPORTER OFF CACHE BOOL "")
+# removed from assimp, so doesn't need to compile at all
+set (ASSIMP_BUILD_X3D_IMPORTER OFF CACHE BOOL "")
+# doesn't work because of xml parsing error
+set (ASSIMP_BUILD_IRR_IMPORTER OFF CACHE BOOL "")
+set (ASSIMP_BUILD_IRRMESH_IMPORTER OFF CACHE BOOL "")
+# doesn't work
+set (ASSIMP_BUILD_TERRAGEN_IMPORTER OFF CACHE BOOL "")
+# this dramatically decreases the wasm file size
+set (ASSIMP_BUILD_IFC_IMPORTER OFF CACHE BOOL "")
+add_subdirectory(third_party/assimp)
+
+# Include the Assimp headers
+include_directories(${PROJECT_NAME} PRIVATE third_party/assimp/include)
+# Link the Assimp .lib file with your project
+target_link_libraries(${PROJECT_NAME} assimp)

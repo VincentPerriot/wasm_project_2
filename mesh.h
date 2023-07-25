@@ -8,10 +8,10 @@
 #include "vec2.h"
 
 struct Vertex {
-	vec3 Pos;
-	vec3 Colors;
-	vec2 TexUV;
-	vec3 Normal;
+	float Pos[3];
+	float Colors[3] = { 1.0, 1.0, 1.0 };
+	float TexUV[2];
+	float Normal[3];
 };
 
 struct Texture {
@@ -99,13 +99,17 @@ private:
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 
-		// Set normal ptr
+		// Set Color attrib
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Colors));
 
-		// Set TextUV ptr
-		glEnableVertexAttribArray(3);
+		// Set TexUV ptr
+		glEnableVertexAttribArray(2);
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexUV));
+
+		// Set normal ptr
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
 
 		// Unbind VAO
 		glBindVertexArray(0);

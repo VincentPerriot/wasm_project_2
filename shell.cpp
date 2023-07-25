@@ -176,9 +176,8 @@ double lastTime = 0;
 unsigned int tex;
 unsigned int cubemapTexture;
 
-char* path = (char*)"/assets/backpack/backpack.obj";
-Model ourModel(path);
-
+Model model1;
+Model model2;
 
 int main()
 {
@@ -205,10 +204,11 @@ int main()
     // QUAD PROG, starting with textures
     quadProgram = createProgram("/shaders/shader.vert", "/shaders/shader.frag");
 
+
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
     // set the texture wrapping/filtering options (on the currently bound texture object)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -256,7 +256,10 @@ int main()
     // Activate shaders before sending texture uniform
     glUseProgram(quadProgram);
     glUniform1i(glGetUniformLocation(quadProgram, "material.tex"), 0);
-    
+
+	char* path = (char*)"/assets/backpack/backpack.obj";
+    model1 = Model(path);
+
     // Unbind VAO
     glBindVertexArray(0);
 
@@ -396,18 +399,8 @@ void loop()
     std::vector<float> formattedVP1 = vp1.toFloatVector();
 	glUniformMatrix4fv(vpLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedVP1.data()));
 
-	// render the loaded model
     mat4 model;
 	unsigned int modelLoc = glGetUniformLocation(quadProgram, "model");
-
-	model = translate(model, vec3(3.0, 0.0, 0.0));
-	model = scale(model, 1.0);	// it's a bit too big for our scene, so scale it down
-
-    std::vector<float> formattedModel = model.toFloatVector();
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedModel.data()));
-
-    // Send Model matrix for backpack model to shaders
-	ourModel.Draw(quadProgram);
 
     // Light loop
     for (GLuint i = 0; i < 8; i++)
@@ -449,13 +442,23 @@ void loop()
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
         }
     }
-
+    
     GLfloat camPos[] = {static_cast<GLfloat>(camera.Position.x()),
         static_cast<GLfloat>(camera.Position.y()),
         static_cast<GLfloat>(camera.Position.z())};
 
 	unsigned int viewPosLoc = glGetUniformLocation(quadProgram, "viewPos");
     glUniform3fv(viewPosLoc, 1, camPos);
+
+    mat4 reset;
+    model = reset;
+    model = translate(model, vec3(4.0, 0.0, -2.0));
+    model = yaw(model, 180);
+	model = scale(model, 0.2);
+    std::vector<float> formattedModel = model.toFloatVector();
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedModel.data()));
+
+	model1.Draw(quadProgram);
 
     glBindVertexArray(0);
 

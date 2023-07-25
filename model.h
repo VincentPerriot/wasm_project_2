@@ -13,6 +13,7 @@ unsigned int TextureFromFile(const char *path, const std::string &directory, boo
 class Model
 {
 public:
+	Model() = default;
 	Model(char *path) 
 	{
 		loadModel(path);
@@ -74,36 +75,43 @@ private:
 		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 		{
 			Vertex vertex;
-			vec3 vector;
-			// Note, will use same vector to populate different data in mesh
+			float values[3];
+			// Note, will use same array to populate different data in vertex
 			// positions
-			vector[0] = mesh->mVertices[i].x;
-			vector[1] = mesh->mVertices[i].y;
-			vector[2] = mesh->mVertices[i].z;
-			vertex.Pos = vector;
+			values[0] = mesh->mVertices[i].x;
+			values[1] = mesh->mVertices[i].y;
+			values[2] = mesh->mVertices[i].z;
+			vertex.Pos[0] = values[0];
+			vertex.Pos[1] = values[1];
+			vertex.Pos[2] = values[2];
 
 			// normals
 			if (mesh->HasNormals())
 			{
-				vector[0] = mesh->mNormals[i].x;
-				vector[1] = mesh->mNormals[i].y;
-				vector[2] = mesh->mNormals[i].z;
-				vertex.Normal = vector;
+				values[0] = mesh->mNormals[i].x;
+				values[1] = mesh->mNormals[i].y;
+				values[2] = mesh->mNormals[i].z;
+				vertex.Normal[0] = values[0];
+				vertex.Normal[1] = values[1];
+				vertex.Normal[2] = values[2];
 			}
 
 			// Texture
 			if (mesh->mTextureCoords[0])
 			{
-				vec2 vec;
+				float val[2];
 
-				vec[0] = mesh->mTextureCoords[0][i].x;
-				vec[1] = mesh->mTextureCoords[0][i].y;
-
+				val[0] = mesh->mTextureCoords[0][i].x;
+				val[1] = mesh->mTextureCoords[0][i].y;
+				
+				vertex.TexUV[0] = val[0];
+				vertex.TexUV[1] = val[1];
 				// TODO add tan and bitan here
 			}
 			else
 			{
-				vertex.TexUV = vec2(0.0, 0.0);
+				vertex.TexUV[0] = 0.0;
+				vertex.TexUV[1] = 0.0;
 			}
 
 			vertices.push_back(vertex);
@@ -137,12 +145,14 @@ private:
 			// 2. specular maps
 			std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+			/* FOR LATER USE 
 			// 3. normal maps
 			std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
 			textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 			// 4. height maps
 			std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
 			textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+			*/
 		}
         // return a mesh object created from the extracted mesh data
         return Mesh(vertices, indices, textures);

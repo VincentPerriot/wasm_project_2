@@ -13,6 +13,7 @@
 #include "camera.h"
 #include "mesh.h"
 #include "model.h"
+#include "proc.h"
 
 #include "./assets/vertices.h"
 
@@ -151,11 +152,13 @@ GLfloat pointColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 
 GLuint quadProgram = 0;
+GLuint planetProgram = 0;
 GLuint fractalProgram = 0;
 GLuint b_lightProgram = 0;
 GLuint skyboxProgram = 0;
 unsigned int skyboxVAO, skyboxVBO;
 unsigned int quadVAO, quadVBO, quadEBO;
+unsigned int planetVAO, planetVBO, planetEBO;
 unsigned int fractVAO, fractVBO, fractEBO;
 unsigned int b_lightVAO, b_lightVBO;
 GLFWwindow* window;
@@ -177,7 +180,7 @@ unsigned int tex;
 unsigned int cubemapTexture;
 
 Model model1;
-Model model2;
+Planet planet;
 
 int main()
 {
@@ -260,9 +263,39 @@ int main()
 	char* path = (char*)"/assets/backpack/backpack.obj";
     model1 = Model(path);
 
+
     // Unbind VAO
     glBindVertexArray(0);
 
+    // Planet Program
+	planetProgram = createProgram("/shaders/shader.vert", "/shaders/shader.frag");
+
+    glBindVertexArray(planetProgram);
+    std::vector<TerrainFace> terrainFaces;
+    int resolution = 12;
+    Mesh sharedMesh;
+    // up, down then left, right then forward, back
+    vec3 directions[6] = { vec3(0.0, 1.0, 0.0), vec3(0.0, -1.0, 0.0), 
+        vec3(1.0, 0.0, 0.0), vec3(-1.0, 0.0, 0.0), 
+        vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, -1.0) };
+    for (int i = 0; i < 6; i++)
+    {
+        terrainFaces.push_back(TerrainFace(sharedMesh, resolution, directions[i]));
+    }
+    planet = Planet(terrainFaces);
+
+    glBindVertexArray(0);
+    /* Debug
+    std::cout << "Num of Meshes: " << terrainFaces.size() << std::endl;
+    std::cout << "Planet mesh1 num of vertices: " << planet.terrainFaces[0].mesh.vertices.size() << std::endl;
+
+    std::cout << "List of indices:" << std::endl;
+    for (auto num : planet.terrainFaces[0].mesh.indices)
+        std::cout << num << std::endl;
+	std::cout << "List of vertices:" << std::endl;
+    for (auto vertex : planet.terrainFaces[0].mesh.vertices)
+        std::cout << "x: " << vertex.Pos[0] << "y: " << vertex.Pos[1] << "z: " << vertex.Pos[2] << std::endl;
+    */
 
     // Fractal Program
     fractalProgram = createProgram("/shaders/shader_2.vert", "/shaders/shader_2.frag");
@@ -454,11 +487,32 @@ void loop()
     model = reset;
     model = translate(model, vec3(4.0, 0.0, -2.0));
     model = yaw(model, 180);
-	model = scale(model, 0.2);
+	model = scale(model, 0.4);
     std::vector<float> formattedModel = model.toFloatVector();
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedModel.data()));
 
 	model1.Draw(quadProgram);
+
+    glBindVertexArray(0);
+
+
+    // Start Planet program
+    glUseProgram(planetProgram);
+
+    glBindVertexArray(planetVAO);
+
+    mat4 vp3 = vp;
+    unsigned int vp3Loc = glGetUniformLocation(planetProgram, "vp");
+    std::vector<float> formattedVP3 = vp3.toFloatVector();
+	glUniformMatrix4fv(vp3Loc, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedVP3.data()));
+
+    mat4 model3;
+    model3 = translate(model3, vec3(-6.0, 0.0, 0.0));
+	unsigned int modelLoc3 = glGetUniformLocation(planetProgram, "model");
+	std::vector<float> formattedModel3 = model.toFloatVector();
+    glUniformMatrix4fv(modelLoc3, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedModel3.data()));
+
+    planet.Draw(planetProgram);
 
     glBindVertexArray(0);
 

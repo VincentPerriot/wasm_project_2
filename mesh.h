@@ -26,7 +26,19 @@ public:
 	std::vector<GLuint> indices;
 	
 	std::vector<Texture> textures;
+	std::vector<Texture> defaultTextures;
 	GLuint VAO;
+
+	Mesh() = default;
+
+	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices)
+	{
+		this->vertices = vertices;
+		this->indices = indices;
+		this->textures = defaultTextures;
+
+		SetMesh();
+	}
 
 	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures) 
 	{
@@ -45,7 +57,7 @@ public:
 		unsigned int specularNum = 1;
 		unsigned int normalNum = 1;
 		unsigned int heightNum = 1;
-		
+	
 		for (unsigned int i = 0; i < textures.size(); i++)
 		{
 			// Activate proper texture unit
@@ -77,6 +89,7 @@ public:
 		glActiveTexture(GL_TEXTURE0);
 
 	}
+
 private:
 	GLuint VBO, EBO;
 
@@ -88,6 +101,7 @@ private:
 		glGenBuffers(1, &EBO);
 
 		glBindVertexArray(VAO);
+
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);

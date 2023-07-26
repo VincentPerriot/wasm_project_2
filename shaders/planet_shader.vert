@@ -8,16 +8,16 @@ layout (location = 3) in vec3 a_normal; // Normals Coordinates
 uniform mat4 vp;
 uniform mat4 model;
 
-out vec2 v_texcoord;
+//out vec2 v_texcoord;
 out vec3 v_colors;
-out vec3 v_normal;
-out vec3 fragPos;
+//out vec3 v_normal;
+//out vec3 fragPos;
 
 void main()
 {
 	v_colors = a_colors;
-	v_texcoord = a_texcoord;
-	v_normal = mat3(transpose(inverse(model))) * a_normal;
-	fragPos = vec3(a_vertex * model);
+	//v_texcoord = a_texcoord;
+	//v_normal = mat3(transpose(inverse(model))) * a_normal;
+	vec3 fragPos = vec3(a_vertex * model);
 	gl_Position = vec4(fragPos, 1.0) * vp;
 }

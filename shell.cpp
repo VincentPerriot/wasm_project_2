@@ -158,7 +158,6 @@ GLuint b_lightProgram = 0;
 GLuint skyboxProgram = 0;
 unsigned int skyboxVAO, skyboxVBO;
 unsigned int quadVAO, quadVBO, quadEBO;
-unsigned int planetVAO, planetVBO, planetEBO;
 unsigned int fractVAO, fractVBO, fractEBO;
 unsigned int b_lightVAO, b_lightVBO;
 GLFWwindow* window;
@@ -266,13 +265,14 @@ int main()
 
     // Unbind VAO
     glBindVertexArray(0);
+    glUseProgram(0);
 
     // Planet Program
-	planetProgram = createProgram("/shaders/shader.vert", "/shaders/shader.frag");
+	planetProgram = createProgram("/shaders/planet_shader.vert", "/shaders/planet_shader.frag");
 
-    glBindVertexArray(planetProgram);
+    glUseProgram(planetProgram);
     std::vector<TerrainFace> terrainFaces;
-    int resolution = 12;
+    int resolution = 24;
     Mesh sharedMesh;
     // up, down then left, right then forward, back
     vec3 directions[6] = { vec3(0.0, 1.0, 0.0), vec3(0.0, -1.0, 0.0), 
@@ -284,7 +284,6 @@ int main()
     }
     planet = Planet(terrainFaces);
 
-    glBindVertexArray(0);
     /* Debug
     std::cout << "Num of Meshes: " << terrainFaces.size() << std::endl;
     std::cout << "Planet mesh1 num of vertices: " << planet.terrainFaces[0].mesh.vertices.size() << std::endl;
@@ -499,8 +498,6 @@ void loop()
     // Start Planet program
     glUseProgram(planetProgram);
 
-    glBindVertexArray(planetVAO);
-
     mat4 vp3 = vp;
     unsigned int vp3Loc = glGetUniformLocation(planetProgram, "vp");
     std::vector<float> formattedVP3 = vp3.toFloatVector();
@@ -509,12 +506,10 @@ void loop()
     mat4 model3;
     model3 = translate(model3, vec3(-6.0, 0.0, 0.0));
 	unsigned int modelLoc3 = glGetUniformLocation(planetProgram, "model");
-	std::vector<float> formattedModel3 = model.toFloatVector();
+	std::vector<float> formattedModel3 = model3.toFloatVector();
     glUniformMatrix4fv(modelLoc3, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedModel3.data()));
 
     planet.Draw(planetProgram);
-
-    glBindVertexArray(0);
 
 
     // Begin Fractal program

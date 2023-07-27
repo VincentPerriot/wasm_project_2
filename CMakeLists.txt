@@ -19,7 +19,13 @@ endif()
 find_package(OpenGL REQUIRED)
 
 # Set the source files
-set(SOURCES shell.cpp)
+set(SOURCES shell.cpp
+    third_party/imgui/imgui.cpp
+    third_party/imgui/imgui_draw.cpp
+    third_party/imgui/imgui_widgets.cpp
+    third_party/imgui/imgui_tables.cpp
+    third_party/imgui/imgui_impl_opengl3.cpp
+    third_party/imgui/imgui_impl_glfw.cpp)
 
 # Create the executable
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -63,3 +69,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE third_party/assimp/include)
 
 # Link Assimp
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp)
+
+# Include ImGui headers
+target_include_directories(${PROJECT_NAME} PRIVATE third_party/imgui)
+

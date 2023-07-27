@@ -24,6 +24,7 @@ void loop();
 void processInput(GLFWwindow* window, double deltaTime);
 void processMouse(GLFWwindow* window, double xposIn, double yposIn);
 unsigned int loadCubeMap(std::vector<std::string> faces);
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 
 
 // Shader and Program Utils
@@ -169,6 +170,7 @@ double lastY = CANVAS_HEIGHT / 2.0;
 double xpos = 0;
 double ypos = 0;
 bool firstMouse = true;
+bool rightMouseButtonPressed = false;
 
 // Process Time
 double deltaTime = 0;
@@ -273,6 +275,7 @@ int main()
     glUseProgram(planetProgram);
     std::vector<TerrainFace> terrainFaces;
     int resolution = 24;
+    std::vector<float> color{ 0.7, 0.3, 0.4 };
     Mesh sharedMesh;
     // up, down then left, right then forward, back
     vec3 directions[6] = { vec3(0.0, 1.0, 0.0), vec3(0.0, -1.0, 0.0), 
@@ -280,9 +283,10 @@ int main()
         vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, -1.0) };
     for (int i = 0; i < 6; i++)
     {
-        terrainFaces.push_back(TerrainFace(sharedMesh, resolution, directions[i]));
+        terrainFaces.push_back(TerrainFace(sharedMesh, resolution, directions[i], color));
     }
     planet = Planet(terrainFaces);
+    planet.setBaseGUI(window);
 
     /* Debug
     std::cout << "Num of Meshes: " << terrainFaces.size() << std::endl;
@@ -390,6 +394,8 @@ int main()
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
+
     emscripten_set_main_loop(loop, 0, 1);
     glfwTerminate();
     return 0;
@@ -397,6 +403,12 @@ int main()
 
 void loop()
 {
+
+    if (rightMouseButtonPressed)
+    {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
     double now = glfwGetTime();
 
     deltaTime = now - lastTime;
@@ -404,6 +416,7 @@ void loop()
 
     // Process Inputs
     glfwGetCursorPos(window, &xpos, &ypos);
+    
     processInput(window, deltaTime);
     processMouse(window, xpos, ypos);
 
@@ -509,8 +522,10 @@ void loop()
 	std::vector<float> formattedModel3 = model3.toFloatVector();
     glUniformMatrix4fv(modelLoc3, 1, GL_FALSE, reinterpret_cast<GLfloat*>(formattedModel3.data()));
 
-    planet.Draw(planetProgram);
+	unsigned int viewPosLoc2 = glGetUniformLocation(planetProgram, "viewPos");
+    glUniform3fv(viewPosLoc2, 1, camPos);
 
+    planet.Draw(planetProgram);
 
     // Begin Fractal program
     glUseProgram(fractalProgram);
@@ -574,6 +589,14 @@ void loop()
     glDrawArrays(GL_POINTS, 0, 8);
     glBindVertexArray(0);
 
+    // Set a square around the sphere to pop IMGUI, press G to enbale mouse
+    if (camera.Position[0] < -3.0 && camera.Position[0] > -9.0 &&
+        camera.Position[2] < 6.0 && camera.Position[2] > -6.0)
+    {
+        planet.RenderUI(window);
+    }
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
 // Input Utils
@@ -594,23 +617,26 @@ void processInput(GLFWwindow* window, double deltaTime)
 
 void processMouse(GLFWwindow* window, double xposIn, double yposIn)
 {
-	double xpos = xposIn;
-    double ypos = yposIn;
-
-    if (firstMouse)
+    if (rightMouseButtonPressed)
     {
+        double xpos = xposIn;
+        double ypos = yposIn;
+
+        if (firstMouse)
+        {
+            lastX = xpos;
+            lastY = ypos;
+            firstMouse = false;
+        }
+
+        double xoffset = xpos - lastX;
+        double yoffset = lastY - ypos;
+
         lastX = xpos;
         lastY = ypos;
-        firstMouse = false;
+
+        camera.processMouseMovement(xoffset, yoffset);
     }
-
-    double xoffset = xpos - lastX;
-    double yoffset = lastY - ypos;
-
-    lastX = xpos;
-    lastY = ypos;
-
-    camera.processMouseMovement(xoffset, yoffset);
 }
 
 unsigned int loadCubeMap(std::vector<std::string> faces)
@@ -643,4 +669,20 @@ unsigned int loadCubeMap(std::vector<std::string> faces)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     return textureID;
+}
+
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_RIGHT)
+    {
+        if (action == GLFW_PRESS)
+        {
+            rightMouseButtonPressed = true;
+
+        }
+        else if (action == GLFW_RELEASE)
+        {
+            rightMouseButtonPressed = false;
+        }
+    }
 }

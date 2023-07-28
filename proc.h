@@ -17,7 +17,7 @@ public:
 	TerrainFace(Mesh a_mesh, int a_resolution, vec3 a_localUp, std::vector<float> a_colors)
 	{
 
-		this->colors = a_colors;
+		colors = a_colors;
 
 		mesh = a_mesh;
 		resolution = a_resolution;
@@ -28,6 +28,11 @@ public:
 		axisA[2] = localUp.x();
 		axisB = cross(localUp, axisA);
 
+		constructMesh();
+	}
+
+	void update()
+	{
 		constructMesh();
 	}
 
@@ -93,13 +98,16 @@ public:
 	Planet(std::vector<TerrainFace> a_terrainfaces) 
 	{
 		terrainFaces = a_terrainfaces;
+		// All faces have same color and res, just take first one
+		colors = ImVec4(terrainFaces[0].colors[0], terrainFaces[0].colors[1], terrainFaces[0].colors[2], 1.0f);
+		res = terrainFaces[0].resolution;
 	}
 
 	Planet() = default;
 
 	void Draw(GLuint programID)
 	{
-		for (auto face : terrainFaces)
+		for (auto& face : terrainFaces)
 		{
 			face.mesh.Draw(programID);
 		}
@@ -111,7 +119,7 @@ public:
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		io = ImGui::GetIO(); (void)io;
-
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
 
@@ -119,7 +127,7 @@ public:
 		ImGuiStyle& style = ImGui::GetStyle();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
-			style.WindowRounding = 0.0f;
+			style.WindowRounding = 0.2f;
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
 
@@ -129,37 +137,36 @@ public:
 
 	}
 
+	void update()
+	{
+		for (auto& face : terrainFaces)
+		{
+			face.resolution = res;
+
+			face.colors[0] = colors.x;
+			face.colors[1] = colors.y;
+			face.colors[2] = colors.z;
+
+			face.update();
+		}
+	}
+
 	void RenderUI(GLFWwindow* window)
 	{
 		glfwSwapInterval(1); // Enable vsync
-
-		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-		// Our state
-		bool show_demo_window = true;
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-		static float f = 0.0f;
-		static int counter = 0;
+		ImGui::Begin("Sphere Explorer!");                          // Create a window
 
-		ImGui::Begin("Sphere Explorer!");                          // Create a window called "Hello, world!" and append into it.
+		ImGui::Text("Change settings to observe real time changes");
 
-		ImGui::Text("Change settings to observe real time changes");     // Display some text (you can use a format strings too)
-		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+		ImGui::SliderInt("Resolution", &res, 2, 128);            // Edit int using a slider
+		ImGui::ColorEdit3("clear color", (float*)&colors); // Edit 3 floats representing a color
 
-		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-		ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-		if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-			counter++;
-		ImGui::SameLine();
-		ImGui::Text("counter = %d", counter);
-
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 		ImGui::End();
 
 		// Rendering
@@ -177,6 +184,8 @@ public:
 
 public:
 	std::vector<TerrainFace> terrainFaces;
+	ImVec4 colors;
+	int res;
 
 private:
 	ImGuiIO io;

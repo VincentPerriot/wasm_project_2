@@ -31,20 +31,20 @@ public:
 
 	Mesh() = default;
 
-	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices)
+	Mesh(std::vector<Vertex> a_vertices, std::vector<GLuint> a_indices)
 	{
-		this->vertices = vertices;
-		this->indices = indices;
-		this->textures = defaultTextures;
+		vertices = a_vertices;
+		indices = a_indices;
+		textures = defaultTextures;
 
 		SetMesh();
 	}
 
-	Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures) 
+	Mesh(std::vector<Vertex> a_vertices, std::vector<GLuint> a_indices, std::vector<Texture> a_textures) 
 	{
-		this->vertices = vertices;
-		this->indices = indices;
-		this->textures = textures;
+		vertices = a_vertices;
+		indices = a_indices;
+		textures = a_textures;
 
 		SetMesh();
 	}

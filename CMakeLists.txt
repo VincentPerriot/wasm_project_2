@@ -62,6 +62,7 @@ set (ASSIMP_BUILD_IRRMESH_IMPORTER OFF CACHE BOOL "")
 set (ASSIMP_BUILD_TERRAGEN_IMPORTER OFF CACHE BOOL "")
 # this dramatically decreases the wasm file size
 set (ASSIMP_BUILD_IFC_IMPORTER OFF CACHE BOOL "")
+
 add_subdirectory(third_party/assimp)
 
 # Include Assimp headers

@@ -203,7 +203,7 @@ int main()
     // AA added on webGL context directly from generated JS Emscripten file
     glfwMakeContextCurrent(window);
     glfwWindowHint(GLFW_SAMPLES, 4);
-
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
     // QUAD PROG, starting with textures
     quadProgram = createProgram("/shaders/shader.vert", "/shaders/shader.frag");
@@ -394,7 +394,6 @@ int main()
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
     emscripten_set_main_loop(loop, 0, 1);
     glfwTerminate();
@@ -563,7 +562,6 @@ void loop()
     glBindVertexArray(0);
  
     glDepthFunc(GL_LESS); // set depth function back to default
-	
 
     //Begin billboard Light program
     glUseProgram(b_lightProgram);
@@ -589,11 +587,12 @@ void loop()
     glDrawArrays(GL_POINTS, 0, 8);
     glBindVertexArray(0);
 
-    // Set a square around the sphere to pop IMGUI, press G to enbale mouse
+     // Set a square around the sphere to pop IMGUI, press G to enbale mouse
     if (camera.Position[0] < -3.0 && camera.Position[0] > -9.0 &&
         camera.Position[2] < 6.0 && camera.Position[2] > -6.0)
     {
         planet.RenderUI(window);
+        planet.update();
     }
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -686,3 +685,4 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
         }
     }
 }
+

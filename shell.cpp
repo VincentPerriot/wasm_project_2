@@ -274,7 +274,7 @@ int main()
 
     glUseProgram(planetProgram);
     std::vector<TerrainFace> terrainFaces;
-    int resolution = 24;
+    int resolution = 12;
     std::vector<float> color{ 0.7, 0.3, 0.4 };
     Mesh sharedMesh;
     // up, down then left, right then forward, back
@@ -635,6 +635,13 @@ void processMouse(GLFWwindow* window, double xposIn, double yposIn)
         lastY = ypos;
 
         camera.processMouseMovement(xoffset, yoffset);
+    }
+    else
+    {
+        // Store the cursor position when the right mouse button is released
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = true;
     }
 }
 

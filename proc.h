@@ -164,7 +164,7 @@ public:
 
 		ImGui::Text("Change settings to observe real time changes");
 
-		ImGui::SliderInt("Resolution", &res, 2, 128);            // Edit int using a slider
+		ImGui::SliderInt("Resolution", &res, 2, 32);            // Edit int using a slider
 		ImGui::ColorEdit3("clear color", (float*)&colors); // Edit 3 floats representing a color
 
 		ImGui::End();

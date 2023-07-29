@@ -18,7 +18,7 @@ enum Camera_Movement {
 const double YAW         = -90.0;
 const double PITCH       =  0.0;
 const double SPEED       =  2.0;
-const double SENSITIVITY =  0.1;
+const double SENSITIVITY =  0.2;
 
 class Camera
 {

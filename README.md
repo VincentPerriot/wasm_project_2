@@ -9,6 +9,5 @@
 #### Website built mostly for learning purposes, no maths library used.
 
 #### Link
-(Not updated with lights and models yet)
 https://vincentperriot.github.io/wasm.github.io/
 

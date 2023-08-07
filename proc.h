@@ -53,9 +53,20 @@ public:
 				vec3 pointOnUnitCube = localUp + (percent.x() - 0.5) * 2.0 * axisA + (percent.y() - 0.5) * 2.0 * axisB;
 
 				vec3 pointOnUnitSphere = unit_vector(pointOnUnitCube);
-				vertices[i].Pos[0] = (float)pointOnUnitSphere.x();
-				vertices[i].Pos[1] = (float)pointOnUnitSphere.y();
-				vertices[i].Pos[2] = (float)pointOnUnitSphere.z();
+				if (!elevations.empty())
+				{
+					std::cout << "applying noise" << std::endl;
+					vertices[i].Pos[0] = (float)pointOnUnitSphere.x() * (1 + elevations[i].x());
+					vertices[i].Pos[1] = (float)pointOnUnitSphere.y() * (1 + elevations[i].y());
+					vertices[i].Pos[2] = (float)pointOnUnitSphere.z() * (1 + elevations[i].z());
+				}
+				else
+				{
+					std::cout << "generating without noise" << std::endl;
+					vertices[i].Pos[0] = (float)pointOnUnitSphere.x();
+					vertices[i].Pos[1] = (float)pointOnUnitSphere.y();
+					vertices[i].Pos[2] = (float)pointOnUnitSphere.z();
+				}
 
 				vertices[i].Colors[0] = colors[0];
 				vertices[i].Colors[1] = colors[1];
@@ -79,6 +90,8 @@ public:
 				}
 			}
 		}
+
+
 		mesh = Mesh(vertices, triangles);
 	}
 
@@ -91,6 +104,7 @@ public:
 	vec3 axisA;
 	vec3 axisB;
 	std::vector<float> colors;
+	std::vector<vec3> elevations;
 };
 
 
@@ -98,13 +112,13 @@ class PerlinNoise {
 public:
 	PerlinNoise()
 	{
-		randvec.resize(point_count);
-
-		for (int i = 0; i < point_count; i++)
+		// Initialise a vector of 256 random numbers from -1 to 1
+		randvec.resize(256);
+		for (int i = 0; i < 256; i++)
 		{
-			randvec.push_back(unit_vector(vec3::random(-1, 1)));
+			randvec[i] = unit_vector(vec3::random(-1, 1));
 		}
-
+		
 		perm_x = generate_perm();
 		perm_y = generate_perm();
 		perm_z = generate_perm();
@@ -125,31 +139,32 @@ public:
 		//Access perm array with index calculated by adding i and di, then adding bitwise wrap around 255
 		// Essentially realising suffled permutations on a 3d cube
 		for (int di = 0; di < 2; di++)
+		{
 			for (int dj = 0; dj < 2; dj++)
+			{
 				for (int dk = 0; dk < 2; dk++)
+				{
 					c[di][dj][dk] = randvec[
 						perm_x[(i + di) & 255] ^
 						perm_y[(j + dj) & 255] ^
 						perm_z[(k + dk) & 255]];
-
+				}
+			}
+		}
 		return trilinear_interp(c, u, v, w);
 	}
 
 	~PerlinNoise() {
-		delete[] perm_x;
-		delete[] perm_y;
-		delete[] perm_z;
 	}
 
 private:
-	int point_count = 256;
 	std::vector<vec3> randvec;
-	int* perm_x;
-	int* perm_y;
-	int* perm_z;
+	std::vector<int> perm_x;
+	std::vector<int> perm_y;
+	std::vector<int> perm_z;
 
 	// For n integers in array p, permute with a random position from 0 to index
-	void permute(int* p, int n)
+	void permute(std::vector<int> p, int n)
 	{
 		for (int i = n - 1; i > 0; i--)
 		{
@@ -161,15 +176,15 @@ private:
 	}
 	
 	// Fill array with n integers then permute to random positions in the array
-	int* generate_perm()
+	std::vector<int> generate_perm()
 	{
-		auto p = new int[point_count];
+		std::vector<int> p(256);
 
-		for (int i = 0; i < point_count; i++)
+		for (int i = 0; i < 256; i++)
 		{
 			p[i] = i;
 		}
-		permute(p, point_count);
+		permute(p, 256);
 
 		return p;
 	}
@@ -267,45 +282,70 @@ public:
 
 	void update()
 	{
-		for (auto& face : terrainFaces)
+		static int prevResolution = res;
+		static ImVec4 prevColors = colors;
+		static bool prevAddedNoise = addedNoise;
+
+		if (prevResolution != res ||
+			prevColors.x != colors.x ||
+			prevColors.y != colors.y ||
+			prevColors.z != colors.z ||
+			prevAddedNoise != addedNoise)
 		{
-			face.resolution = res;
+			for (auto& face : terrainFaces)
+			{
+				face.resolution = res;
 
-			face.colors[0] = colors.x;
-			face.colors[1] = colors.y;
-			face.colors[2] = colors.z;
+				// To get coherent noise on the whole sphere, we need to cut the used elevations
+				// Otherwise the next 5 faces will repeat same noise pattern and junction will not work
+				if (addedNoise)
+				{
+					getElevations();
+					face.elevations = elevations;
+					elevations.erase(elevations.begin(), elevations.begin() + (face.resolution * face.resolution));
+				}
 
-			face.update();
+				face.colors[0] = colors.x;
+				face.colors[1] = colors.y;
+				face.colors[2] = colors.z;
+
+				face.update();
+			}
 		}
+
+        prevResolution = res;
+        prevColors = colors;
+		prevAddedNoise = addedNoise;
+		elevations = {};
 	}
 
-	void addPerlinNoise()
+	void getElevations()
 	{
 		double scale = (double)noiseScale;
 		noiseLayer = NoiseLayer(scale);
+
 		for (auto& face : terrainFaces)
 		{
 			for (auto& vertex : face.mesh.vertices)
 			{
 				// Built Noise with vec3 of double
-				// First cast to double, then process noise, then recast to float
 				double x = (double)vertex.Pos[0];
 				double y = (double)vertex.Pos[1];
 				double z = (double)vertex.Pos[2];
 				vec3 newPos = noiseLayer.values(vec3(x, y, z));
 
-				vertex.Pos[0] = (float)newPos[0];
-				vertex.Pos[1] = (float)newPos[1];
-				vertex.Pos[2] = (float)newPos[2];
+				elevations.push_back(newPos);
 			}
 		}
 	}
 
 	void waitCheck()
 	{
-		if (addNoise)
-			addPerlinNoise();
-		addNoise = false;
+		if (addNoise && !addedNoise)
+		{
+			//getElevations();
+			addedNoise = true;
+		}
 	}
 
 	void RenderUI(GLFWwindow* window)
@@ -322,10 +362,10 @@ public:
 		ImGui::Text("Change settings to observe real time changes");
 
 		ImGui::SliderInt("Resolution", &res, 2, 32);            // Edit int using a slider
-		ImGui::ColorEdit3("clear color", (float*)&colors); // Edit 3 floats representing a color
+		ImGui::ColorEdit3("Sphere color", (float*)&colors); // Edit 3 floats representing a color
 
 		ImGui::Checkbox("Add Noise", &addNoise);
-		ImGui::SliderFloat("Noise Scale", &noiseScale, 1.0, 10.0);
+		ImGui::SliderFloat("Noise Scale", &noiseScale, 0.1, 10.0);
 
 		ImGui::End();
 
@@ -347,11 +387,13 @@ public:
 	ImVec4 colors;
 	int res;
 	bool addNoise = false;
-	float noiseScale = 1.0;
+	float noiseScale = 2.0;
 	NoiseLayer noiseLayer;
+	std::vector<vec3> elevations;
 
 private:
 	ImGuiIO io;
+	bool addedNoise = false;
 };
 
 

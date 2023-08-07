@@ -7,6 +7,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "maths.h"
 
 class TerrainFace
 {
@@ -93,6 +94,133 @@ public:
 };
 
 
+class PerlinNoise {
+public:
+	PerlinNoise()
+	{
+		randvec.resize(point_count);
+
+		for (int i = 0; i < point_count; i++)
+		{
+			randvec.push_back(unit_vector(vec3::random(-1, 1)));
+		}
+
+		perm_x = generate_perm();
+		perm_y = generate_perm();
+		perm_z = generate_perm();
+	}
+
+	double noise(const vec3& pos)
+	{
+		// Save the remainder of each coordinates
+		double u = pos.x() - floor(pos.x());
+		double v = pos.y() - floor(pos.y());
+		double w = pos.z() - floor(pos.z());
+		
+		// Save the integer part of each coordinates
+		int i = static_cast<int>(floor(pos.x()));
+		int j = static_cast<int>(floor(pos.y()));
+		int k = static_cast<int>(floor(pos.z()));
+		vec3 c[2][2][2];
+		//Access perm array with index calculated by adding i and di, then adding bitwise wrap around 255
+		// Essentially realising suffled permutations on a 3d cube
+		for (int di = 0; di < 2; di++)
+			for (int dj = 0; dj < 2; dj++)
+				for (int dk = 0; dk < 2; dk++)
+					c[di][dj][dk] = randvec[
+						perm_x[(i + di) & 255] ^
+						perm_y[(j + dj) & 255] ^
+						perm_z[(k + dk) & 255]];
+
+		return trilinear_interp(c, u, v, w);
+	}
+
+	~PerlinNoise() {
+		delete[] perm_x;
+		delete[] perm_y;
+		delete[] perm_z;
+	}
+
+private:
+	int point_count = 256;
+	std::vector<vec3> randvec;
+	int* perm_x;
+	int* perm_y;
+	int* perm_z;
+
+	// For n integers in array p, permute with a random position from 0 to index
+	void permute(int* p, int n)
+	{
+		for (int i = n - 1; i > 0; i--)
+		{
+			int target = random_int(0, i);
+			int tmp = p[i];
+			p[i] = p[target];
+			p[target] = tmp;
+		}
+	}
+	
+	// Fill array with n integers then permute to random positions in the array
+	int* generate_perm()
+	{
+		auto p = new int[point_count];
+
+		for (int i = 0; i < point_count; i++)
+		{
+			p[i] = i;
+		}
+		permute(p, point_count);
+
+		return p;
+	}
+
+	// Trilinear interpolation, directly from RayTracing in a week book
+	double trilinear_interp(vec3 c[2][2][2], double u, double v, double w)
+		{
+		// Hermitian Smoothing
+		auto uu = u * u * (3 - 2 * u);
+		auto vv = v * v * (3 - 2 * v);
+		auto ww = w * w * (3 - 2 * w);
+		auto accum = 0.0;
+
+		for (int i = 0; i < 2; i++)
+			for (int j = 0; j < 2; j++)
+				for (int k = 0; k < 2; k++)
+				{
+					vec3 weight_v(u - i, v - j, w - k);
+					accum += (i * uu + (1 - i) * (1 - uu))
+						* (j * vv + (1 - j) * (1 - vv))
+						* (k * ww + (1 - k) * (1 - ww))
+						* dot(c[i][j][k], weight_v);
+				}
+
+		return accum;
+	}
+};
+
+
+class NoiseLayer {
+public:
+	NoiseLayer() {}
+
+	NoiseLayer(double a_scale) {
+		noise = PerlinNoise();
+		scale = a_scale;
+	};
+
+	vec3 values(const vec3& pos)
+	{
+		return vec3(1, 1, 1) * 0.5 * (1.0 + noise.noise(scale * pos));
+	}
+
+	~NoiseLayer() {}
+
+private:
+	PerlinNoise noise;
+	double scale;
+};
+
+
 class Planet {
 public:
 	Planet(std::vector<TerrainFace> a_terrainfaces) 
@@ -151,6 +279,35 @@ public:
 		}
 	}
 
+	void addPerlinNoise()
+	{
+		double scale = (double)noiseScale;
+		noiseLayer = NoiseLayer(scale);
+		for (auto& face : terrainFaces)
+		{
+			for (auto& vertex : face.mesh.vertices)
+			{
+				// Built Noise with vec3 of double
+				// First cast to double, then process noise, then recast to float
+				double x = (double)vertex.Pos[0];
+				double y = (double)vertex.Pos[1];
+				double z = (double)vertex.Pos[2];
+				vec3 newPos = noiseLayer.values(vec3(x, y, z));
+
+				vertex.Pos[0] = (float)newPos[0];
+				vertex.Pos[1] = (float)newPos[1];
+				vertex.Pos[2] = (float)newPos[2];
+			}
+		}
+	}
+
+	void waitCheck()
+	{
+		if (addNoise)
+			addPerlinNoise();
+		addNoise = false;
+	}
+
 	void RenderUI(GLFWwindow* window)
 	{
 		glfwSwapInterval(1); // Enable vsync
@@ -166,6 +323,9 @@ public:
 
 		ImGui::SliderInt("Resolution", &res, 2, 32);            // Edit int using a slider
 		ImGui::ColorEdit3("clear color", (float*)&colors); // Edit 3 floats representing a color
+
+		ImGui::Checkbox("Add Noise", &addNoise);
+		ImGui::SliderFloat("Noise Scale", &noiseScale, 1.0, 10.0);
 
 		ImGui::End();
 
@@ -186,8 +346,12 @@ public:
 	std::vector<TerrainFace> terrainFaces;
 	ImVec4 colors;
 	int res;
+	bool addNoise = false;
+	float noiseScale = 1.0;
+	NoiseLayer noiseLayer;
 
 private:
 	ImGuiIO io;
 };
+
 

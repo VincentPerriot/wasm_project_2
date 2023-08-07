@@ -400,6 +400,7 @@ int main()
     return 0;
 }
 
+
 void loop()
 {
 
@@ -593,6 +594,7 @@ void loop()
     {
         planet.RenderUI(window);
         planet.update();
+        planet.waitCheck();
     }
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);

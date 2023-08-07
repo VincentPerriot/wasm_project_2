@@ -23,7 +23,8 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "cmakeToolchain": "C:/Users/perri/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
-      "inheritEnvironments": []
+      "inheritEnvironments": [],
+      "intelliSenseMode": "windows-clang-x64"
     }
   ]
 }

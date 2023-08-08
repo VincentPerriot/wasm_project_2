@@ -525,6 +525,13 @@ void loop()
 	unsigned int viewPosLoc2 = glGetUniformLocation(planetProgram, "viewPos");
     glUniform3fv(viewPosLoc2, 1, camPos);
 
+	if (planet.applyGradient)
+	{
+		unsigned int gradLoc = glGetUniformLocation(planetProgram, "applyGradient");
+		GLint start = 1;
+		glUniform1i(gradLoc, start);
+	}
+
     planet.Draw(planetProgram);
 
     // Begin Fractal program
@@ -594,7 +601,6 @@ void loop()
     {
         planet.RenderUI(window);
         planet.update();
-        planet.waitCheck();
     }
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);

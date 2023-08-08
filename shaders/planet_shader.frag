@@ -4,13 +4,35 @@ precision mediump float;
 in vec3 v_colors;
 in vec3 v_normal;
 in vec3 fragPos;
+in vec3 initialPos;
 
 uniform vec3 viewPos;
+uniform int applyGradient;
 
 out vec4 FragColor;
 
+vec3 palette(float h)
+{
+    vec3 a = vec3(0.5, 0.5, 0.5);
+    vec3 b = vec3(0.5, 0.5, 0.5);
+    vec3 c = vec3(0.618, -0.422, 0.808);
+    vec3 d = vec3(-0.572, 0.388, 2.208);
 
-vec4 CreateLight(vec3 lightPos, vec3 lightColor, vec3 normal, vec3 fragPos, vec3 viewDir)
+    return a + b*cos( 6.28318*(c*h+d));
+}
+/*
+vec3 palette(float h)
+{
+    vec3 a = vec3(0.5, 0.5, 0.5);
+    vec3 b = vec3(0.5, 0.5, 0.5);
+    vec3 c = vec3(1.0, 1.0, 1.0);
+    vec3 d = vec3(0.263, 0.416, 0.557);
+
+    return a + b*cos( 6.28318*(c*h+d));
+}
+*/
+
+vec4 CreateLight(vec3 colors, vec3 lightPos, vec3 lightColor, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
 
     //ambient
@@ -34,7 +56,7 @@ vec4 CreateLight(vec3 lightPos, vec3 lightColor, vec3 normal, vec3 fragPos, vec3
         specular = vec3(0.0);
     }
 
-   return vec4(v_colors * (ambient + diffuse + specular), 1);
+   return vec4(colors * (ambient + diffuse + specular), 1);
 }
 
 void main()
@@ -44,6 +66,14 @@ void main()
     vec3 lightPos = vec3(0.0, 60.0, -20.0);
     vec3 lightColor = vec3(1.0, 1.0, 1.0);
 
-    vec4 outColor = CreateLight(lightPos, lightColor, v_normal, fragPos, viewDir);
-    FragColor = outColor * vec4(v_colors, 1.0);
+    vec3 colors = v_colors;
+
+    if (applyGradient == 1)
+    {
+        float h = length(initialPos) * 5.0;
+        colors = normalize(palette(h));
+    }
+
+    vec4 outColor = CreateLight(colors, lightPos, lightColor, v_normal, fragPos, viewDir);
+    FragColor = outColor * vec4(colors, 1.0);
 }

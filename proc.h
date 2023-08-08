@@ -55,14 +55,12 @@ public:
 				vec3 pointOnUnitSphere = unit_vector(pointOnUnitCube);
 				if (!elevations.empty())
 				{
-					std::cout << "applying noise" << std::endl;
 					vertices[i].Pos[0] = (float)pointOnUnitSphere.x() * (1 + elevations[i].x());
 					vertices[i].Pos[1] = (float)pointOnUnitSphere.y() * (1 + elevations[i].y());
 					vertices[i].Pos[2] = (float)pointOnUnitSphere.z() * (1 + elevations[i].z());
 				}
 				else
 				{
-					std::cout << "generating without noise" << std::endl;
 					vertices[i].Pos[0] = (float)pointOnUnitSphere.x();
 					vertices[i].Pos[1] = (float)pointOnUnitSphere.y();
 					vertices[i].Pos[2] = (float)pointOnUnitSphere.z();
@@ -218,21 +216,50 @@ class NoiseLayer {
 public:
 	NoiseLayer() {}
 
-	NoiseLayer(double a_scale) {
+	NoiseLayer(double a_scale, double a_roughness, double a_baseRoughness, double a_persistence, int a_layers, double a_minValue) {
 		noise = PerlinNoise();
 		scale = a_scale;
+		roughness = a_roughness;
+		baseRoughness = a_baseRoughness;
+		persistence = a_persistence;
+		numLayers = a_layers;
+		minValue = a_minValue;
 	};
 
 	vec3 values(const vec3& pos)
 	{
-		return vec3(1, 1, 1) * 0.5 * (1.0 + noise.noise(scale * pos));
+		vec3 values = vec3(1, 1, 1);
+		double amplitude = 1.0;
+		double frequency = baseRoughness;
+
+		for (int i = 0; i < numLayers; i++)
+		{
+			double v = noise.noise(pos * frequency);
+			values[0] += v * amplitude;
+			values[1] += v * amplitude;
+			values[2] += v * amplitude;
+
+			frequency *= roughness;
+			amplitude *= persistence;
+		}
+		
+		values[0] = std::max(0.0, values[0] - minValue);
+		values[1] = std::max(0.0, values[1] - minValue);
+		values[2] = std::max(0.0, values[2] - minValue);
+
+		return values * scale;
 	}
 
 	~NoiseLayer() {}
 
-private:
+public:
 	PerlinNoise noise;
 	double scale;
+	double roughness;
+	int numLayers;
+	double persistence;
+	double baseRoughness;
+	double minValue;
 };
 
 
@@ -284,13 +311,26 @@ public:
 	{
 		static int prevResolution = res;
 		static ImVec4 prevColors = colors;
-		static bool prevAddedNoise = addedNoise;
+		static bool prevAddedNoise = addNoise;
+		static double prevNoiseScale = noiseScale;
+		static double prevNoiseRoughness = layerRoughness;
+		static double prevBaseRoughness = baseRoughness;
+		static double prevPersistence = persistence;
+		static int prevLayers = numLayers;
+		static float prevMinValue = minValue;
 
 		if (prevResolution != res ||
 			prevColors.x != colors.x ||
 			prevColors.y != colors.y ||
 			prevColors.z != colors.z ||
-			prevAddedNoise != addedNoise)
+			prevAddedNoise != addNoise ||
+			prevNoiseScale != noiseScale || 
+			prevNoiseRoughness != layerRoughness ||
+			prevBaseRoughness != baseRoughness ||
+			prevPersistence != persistence || 
+			prevLayers != numLayers ||
+			prevMinValue != minValue
+			)
 		{
 			for (auto& face : terrainFaces)
 			{
@@ -298,7 +338,7 @@ public:
 
 				// To get coherent noise on the whole sphere, we need to cut the used elevations
 				// Otherwise the next 5 faces will repeat same noise pattern and junction will not work
-				if (addedNoise)
+				if (addNoise)
 				{
 					getElevations();
 					face.elevations = elevations;
@@ -315,14 +355,21 @@ public:
 
         prevResolution = res;
         prevColors = colors;
-		prevAddedNoise = addedNoise;
-		elevations = {};
+		prevAddedNoise = addNoise;
+		prevNoiseScale = noiseScale;
+		prevNoiseRoughness = layerRoughness;
+		prevBaseRoughness = baseRoughness;
+		prevPersistence = persistence;
+		prevLayers = numLayers;
+		prevMinValue = minValue;
+		elevations.clear();
 	}
 
 	void getElevations()
 	{
 		double scale = (double)noiseScale;
-		noiseLayer = NoiseLayer(scale);
+		double roughness = (double)layerRoughness;
+		noiseLayer = NoiseLayer(scale, roughness, baseRoughness, persistence, numLayers, minValue);
 
 		for (auto& face : terrainFaces)
 		{
@@ -336,15 +383,6 @@ public:
 
 				elevations.push_back(newPos);
 			}
-		}
-	}
-
-	void waitCheck()
-	{
-		if (addNoise && !addedNoise)
-		{
-			//getElevations();
-			addedNoise = true;
 		}
 	}
 
@@ -364,8 +402,32 @@ public:
 		ImGui::SliderInt("Resolution", &res, 2, 32);            // Edit int using a slider
 		ImGui::ColorEdit3("Sphere color", (float*)&colors); // Edit 3 floats representing a color
 
+		ImGui::Spacing();
+
 		ImGui::Checkbox("Add Noise", &addNoise);
-		ImGui::SliderFloat("Noise Scale", &noiseScale, 0.1, 10.0);
+		ImGui::SliderFloat("Base Roughness", &baseRoughness, 0.1, 5.0);
+		ImGui::SliderFloat("Scale", &noiseScale, 0.1, 1.0);
+
+		if (ImGui::CollapsingHeader("Layered Noise"))
+		{
+			ImGui::InputInt("Layers", &numLayers);
+			ImGui::SliderFloat("Layer Roughness", &layerRoughness, 0.2f, 4.0f);
+			ImGui::SliderFloat("Persistence", &persistence, 0.1f, 1.0f);
+			ImVec2 size = ImGui::GetWindowSize();
+			if (!resized)
+			{
+				ImGui::SetWindowSize(ImVec2(size.x, size.y + 70));
+				resized = true;
+			}
+		}
+		
+		ImGui::Spacing();
+		ImGui::SliderFloat("Recede Noise", &minValue, 0.0, 2.0);
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		ImGui::Checkbox("Apply Gradient", &applyGradient);
 
 		ImGui::End();
 
@@ -379,7 +441,6 @@ public:
 		glfwSwapBuffers(window);
 	}
 
-
 	~Planet() {};
 
 public:
@@ -387,13 +448,20 @@ public:
 	ImVec4 colors;
 	int res;
 	bool addNoise = false;
-	float noiseScale = 2.0;
+	bool applyGradient = false;
+	float noiseScale = 0.4;
+	float layerRoughness = 1.0;
+	float baseRoughness = 2.0;
+	float persistence = 0.5;
+	int numLayers = 1;
+	float minValue = 0.0;
 	NoiseLayer noiseLayer;
 	std::vector<vec3> elevations;
+	int layerSaved;
+	bool resized = false;
 
 private:
 	ImGuiIO io;
-	bool addedNoise = false;
 };
 
 

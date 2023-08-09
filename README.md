@@ -14,5 +14,5 @@
 
 ### Work in progress
 #### Link
-wasm-github-rgdfubo7r-peperito.vercel.app
+https://vercel.com/peperito/wasm-github-io/YmAmApq823251VXYR2ac7TVgCJJY
 

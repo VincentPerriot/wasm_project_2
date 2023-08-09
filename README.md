@@ -6,9 +6,7 @@
 ![museumgif2](https://github.com/VincentPerriot/wasm_project_2/assets/32515747/ff158e19-ecf1-462e-a173-36d394726ab2)
 
 ## Create a tiny planet with the sphere, a bit of noise and a simple color gradient
-<div style="width:250px ; height:250px">
-![image](https://github.com/VincentPerriot/wasm_project_2/assets/32515747/0816579b-6aeb-4a61-8ef6-d50065dbcf22)
-</div>
+<img src="https://github.com/VincentPerriot/wasm_project_2/assets/32515747/0816579b-6aeb-4a61-8ef6-d50065dbcf22" alt="Image" width="250" height="250>
 
 #### Work in progress
 

@@ -9,6 +9,7 @@
 <div style="width:250px ; height:250px">
 ![image](https://github.com/VincentPerriot/wasm_project_2/assets/32515747/0816579b-6aeb-4a61-8ef6-d50065dbcf22)
 </div>
+
 #### Work in progress
 
 #### Website built mostly for learning purposes, no maths library used.

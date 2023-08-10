@@ -7,7 +7,7 @@
 #### 1 - Set up your environment:
 I decided to go with Visual Studio 2022 and Cmake, you can find more information here: https://www.wasm.builders/
 
-#### 2 - Build my own minimal version of glm
+#### 2 - Build a minimal version of glm
 In order to revise the maths and minimize the wasm build I decided to recreate the bare minimum for graphics maths from scratch.
 
 #### 3 - Reduce size of 3d models and the few external libraries like assimp or ImGUI
@@ -28,5 +28,5 @@ The idea is to add more interesting stuff until it lags on my cheap laptop.
 
 ### Work in progress
 #### Link
-https://wasm-github-io.vercel.app/
+https://vincep-graphics.netlify.app/
 

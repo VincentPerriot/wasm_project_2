@@ -14,6 +14,7 @@
 #include "mesh.h"
 #include "model.h"
 #include "proc.h"
+#include "phys.h"
 
 #include "./assets/vertices.h"
 

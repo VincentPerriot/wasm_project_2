@@ -8,14 +8,14 @@
 I decided to go with Visual Studio 2022 and Cmake, you can find more information here: https://www.wasm.builders/
 
 #### 2 - Build a minimal version of glm
-In order to revise the maths and minimize the wasm build I decided to recreate the bare minimum for graphics maths from scratch.
+In order to minimize the wasm build I decided to recreate the bare minimum for graphics maths from scratch.
 
-#### 3 - Reduce size of 3d models and the few external libraries like assimp or ImGUI
+#### 3 - Reduce the size of 3d models and the few external libraries like assimp or ImGUI
 Check the CMake file to learn more about it.
 
 #### 4 - Add some Graphics!
 At this point the website has most core functionalities you get from any renderer (UI, model Loading, lights, materials...)
-The idea is to add more interesting stuff until it lags on my cheap laptop.
+The idea is to add more interesting stuff over time.
 
 ## Some of the things you can do at the moment (more to come!)
 #### Explore

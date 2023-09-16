@@ -187,7 +187,7 @@ private:
 		return p;
 	}
 
-	// Trilinear interpolation, directly from RayTracing in a week book
+	// Trilinear interpolation, from the RayTracing series book
 	double trilinear_interp(vec3 c[2][2][2], double u, double v, double w)
 		{
 		// Hermitian Smoothing
